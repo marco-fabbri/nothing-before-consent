@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Prova consent-kit</title>
+<link rel="stylesheet" href="../src/consent.css">
+
+<!-- consent.js va PRIMA di tutto: deve emettere i segnali Consent Mode prima che GA4 esista. -->
+<script>
+  window.consensoConfig = {
+    versionePolicy: 1,
+    consentMode: true,
+    urlInformativa: '/privacy'
+  };
+</script>
+<script src="../src/consent.js"></script>
+
+<!-- Caso staybycity: GA4, categoria statistiche -->
+<script type="text/plain" data-consent="statistiche"
+        data-src="https://www.googletagmanager.com/gtag/js?id=G-TE8ZVVY2Z5"></script>
+<script type="text/plain" data-consent="statistiche">
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-TE8ZVVY2Z5');
+  document.getElementById('esito-ga').textContent = 'GA4: script inline eseguito';
+</script>
+</head>
+<body style="font-family:system-ui;max-width:44rem;margin:2rem auto;padding:0 1rem">
+
+<h1>Prova del consent-kit</h1>
+<p>Apri la scheda <strong>Rete</strong> e ricarica: prima della scelta non deve comparire nessuna
+richiesta verso googletagmanager, trustindex o google.com/maps.</p>
+
+<h2>Stato</h2>
+<pre id="stato" style="background:#f3f4f6;padding:1rem;border-radius:8px"></pre>
+<p id="esito-ga">GA4: script inline non ancora eseguito</p>
+
+<h2>Mappa (marketing)</h2>
+<iframe data-consent="marketing" data-consent-etichetta="la mappa dello studio"
+        data-consent-src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2846.38!2d11.36!3d44.48!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1"
+        width="100%" height="300" style="border:0" title="Mappa"></iframe>
+
+<h2>Recensioni (marketing)</h2>
+<script type="text/plain" data-consent="marketing" data-src="https://cdn.trustindex.io/loader.js"></script>
+<p>Lo script Trustindex è inerte finché non c'è consenso.</p>
+
+<h2>Comandi</h2>
+<p>
+  <button onclick="window.consenso.apri()">Preferenze cookie</button>
+  <button onclick="window.consenso.revoca()">Revoca e ricarica</button>
+</p>
+
+<script>
+  function aggiornaStato() {
+    var s = window.consenso.stato();
+    document.getElementById('stato').textContent =
+      'scelta salvata: ' + (s ? JSON.stringify(s, null, 2) : 'nessuna') +
+      '\ndataLayer: ' + JSON.stringify(window.dataLayer || []);
+  }
+  aggiornaStato();
+  window.addEventListener('consenso:cambiato', function (e) {
+    setTimeout(aggiornaStato, 50);
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,119 @@
+/* consent-kit 1.0.0 — stile del banner.
+ *
+ * Neutro di proposito: i colori passano da variabili CSS, così ogni sito lo accorda al proprio
+ * aspetto senza toccare il file. Su un sito copiato pixel per pixel un banner che stona si nota
+ * più di uno che manca.
+ *
+ * Da personalizzare per sito:
+ *   :root { --ck-primario: #29a9e0; --ck-primario-testo: #fff; }
+ */
+
+:root {
+  --ck-fondo: rgba(15, 23, 42, .55);
+  --ck-superficie: #fff;
+  --ck-testo: #1f2937;
+  --ck-testo-tenue: #4b5563;
+  --ck-bordo: #e5e7eb;
+  --ck-primario: #2563eb;
+  --ck-primario-testo: #fff;
+  --ck-raggio: 10px;
+}
+
+.ck-fondo {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000; /* sopra i widget di terze parti, che stanno alti per conto loro */
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 1rem;
+  background: var(--ck-fondo);
+}
+
+@media (min-width: 40em) {
+  .ck-fondo { align-items: center; }
+}
+
+.ck-box {
+  width: 100%;
+  max-width: 34rem;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  padding: 1.5rem;
+  border-radius: var(--ck-raggio);
+  background: var(--ck-superficie);
+  color: var(--ck-testo);
+  font-size: 15px;
+  line-height: 1.5;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, .25);
+}
+
+.ck-box h2 { margin: 0 0 .5rem; font-size: 1.15rem; line-height: 1.3; }
+.ck-testo { margin: 0 0 .75rem; color: var(--ck-testo-tenue); }
+.ck-link { display: inline-block; margin-bottom: .75rem; color: var(--ck-primario); }
+
+.ck-dettaglio { margin: .5rem 0 1rem; border-top: 1px solid var(--ck-bordo); }
+.ck-categoria { display: flex; gap: .6rem; padding: .8rem 0; border-bottom: 1px solid var(--ck-bordo); }
+.ck-categoria input { margin-top: .25rem; width: 1.05rem; height: 1.05rem; flex: none; }
+.ck-categoria label { display: block; cursor: pointer; }
+.ck-categoria input:disabled + label { cursor: default; }
+.ck-categoria label span { display: block; margin-top: .15rem; color: var(--ck-testo-tenue); font-size: .9em; }
+.ck-categoria label em { color: var(--ck-testo-tenue); font-size: .85em; font-style: normal; }
+
+.ck-azioni { display: flex; flex-wrap: wrap; gap: .5rem; }
+
+.ck-btn {
+  flex: 1 1 auto;
+  min-width: 8rem;
+  min-height: 44px; /* bersaglio comodo sul telefono, dove il banner si legge accovacciati */
+  padding: .6rem 1rem;
+  border: 1px solid transparent;
+  border-radius: calc(var(--ck-raggio) - 4px);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Accetta e Rifiuta condividono lo stesso stile: se rifiutare costasse più fatica che accettare,
+   il consenso non sarebbe libero, ed è il rilievo più frequente sui banner fatti in casa. */
+.ck-btn-primario { background: var(--ck-primario); color: var(--ck-primario-testo); }
+.ck-btn-primario:hover { filter: brightness(1.08); }
+.ck-btn-terziario { background: transparent; color: var(--ck-testo); border-color: var(--ck-bordo); }
+.ck-btn-terziario:hover { background: #f9fafb; }
+.ck-btn:focus-visible { outline: 3px solid var(--ck-primario); outline-offset: 2px; }
+
+/* Segnaposto al posto di un iframe bloccato: senza, resterebbe un buco muto nella pagina e
+   nessuno saprebbe che lì c'era una mappa. */
+.ck-segnaposto {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .75rem;
+  min-height: 12rem;
+  padding: 1.5rem;
+  border: 1px dashed var(--ck-bordo);
+  border-radius: var(--ck-raggio);
+  background: #f9fafb;
+  color: var(--ck-testo-tenue);
+  text-align: center;
+}
+
+.ck-segnaposto p { margin: 0; }
+.ck-segnaposto .ck-btn { flex: 0 0 auto; }
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ck-superficie: #111827;
+    --ck-testo: #f3f4f6;
+    --ck-testo-tenue: #9ca3af;
+    --ck-bordo: #374151;
+  }
+  .ck-btn-terziario:hover { background: #1f2937; }
+  .ck-segnaposto { background: #0b1220; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .ck-box { animation: ck-entra .18s ease-out; }
+  @keyframes ck-entra { from { transform: translateY(8px); opacity: 0; } }
+}
