@@ -1,4 +1,4 @@
-/* consent-kit 1.0.0 — stile del banner.
+/* consent-kit 1.1.0 — stile del banner.
  *
  * Neutro di proposito: i colori passano da variabili CSS, così ogni sito lo accorda al proprio
  * aspetto senza toccare il file. Su un sito copiato pixel per pixel un banner che stona si nota
@@ -31,7 +31,38 @@
 }
 
 @media (min-width: 40em) {
-  .ck-fondo { align-items: center; }
+  .ck-pos-modale { align-items: center; }
+}
+
+/* Le varianti non modali non oscurano e non intercettano i click: `inset` viene liberato dove
+   serve e il fondo diventa trasparente, così la pagina resta leggibile e utilizzabile. */
+.ck-pos-basso,
+.ck-pos-alto,
+.ck-pos-angolo {
+  background: none;
+  pointer-events: none; /* il contenitore lascia passare i click… */
+}
+
+.ck-pos-basso .ck-box,
+.ck-pos-alto .ck-box,
+.ck-pos-angolo .ck-box {
+  pointer-events: auto; /* …il pannello no, altrimenti non sarebbe cliccabile */
+  box-shadow: 0 4px 24px rgba(0, 0, 0, .18);
+}
+
+.ck-pos-basso { inset: auto 0 0 0; align-items: flex-end; }
+.ck-pos-alto { inset: 0 0 auto 0; align-items: flex-start; }
+
+.ck-pos-basso .ck-box,
+.ck-pos-alto .ck-box { max-width: 52rem; }
+
+.ck-pos-angolo { inset: auto 0 0 auto; justify-content: flex-end; align-items: flex-end; }
+.ck-pos-angolo .ck-box { max-width: 24rem; }
+
+/* Sotto i 40em l'angolo non ha senso: lo schermo è già stretto, il pannello diventa una barra. */
+@media (max-width: 40em) {
+  .ck-pos-angolo { inset: auto 0 0 0; justify-content: center; }
+  .ck-pos-angolo .ck-box { max-width: none; }
 }
 
 .ck-box {

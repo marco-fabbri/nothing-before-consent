@@ -1,5 +1,5 @@
 /*!
- * consent-kit 1.0.0 — banner di consenso con blocco preventivo.
+ * consent-kit 1.1.0 — banner di consenso con blocco preventivo.
  * Copia versionata: se questo numero è più basso di quello nel CHANGELOG del kit, il sito è indietro.
  *
  * Il punto di questo file non è mostrare un banner: è impedire che le terze parti partano prima
@@ -19,7 +19,7 @@
 (function () {
   'use strict';
 
-  var VERSIONE_KIT = '1.0.0';
+  var VERSIONE_KIT = '1.1.0';
   var cfg = window.consensoConfig || {};
 
   // La versione della policy sta dentro la scelta salvata: quando cambiano i servizi la si alza e
@@ -263,13 +263,22 @@
     focusPrecedente = document.activeElement;
     var salvata = leggi() || { statistiche: false, marketing: false };
 
+    // Posizione: 'modale' (default), 'basso', 'alto', 'angolo'.
+    // Solo la variante modale oscura la pagina e trattiene il focus. Le altre lasciano leggere e
+    // navigare: è lecito perché il blocco delle terze parti è tecnico e vale comunque, e un
+    // pannello che copre il contenuto finché non si decide somiglia troppo a un muro.
+    var posizione = cfg.posizione || 'modale';
+    var modale = posizione === 'modale';
+
     dialogo = document.createElement('div');
-    dialogo.className = 'ck-fondo';
+    dialogo.className = 'ck-fondo ck-pos-' + posizione;
     var box = document.createElement('div');
     box.className = 'ck-box';
     box.setAttribute('role', 'dialog');
-    box.setAttribute('aria-modal', 'true');
     box.setAttribute('aria-labelledby', 'ck-titolo');
+    // aria-modal mente al lettore di schermo se la pagina resta navigabile: si dichiara solo dove
+    // è vero, altrimenti chi usa uno screen reader crede di essere bloccato e non lo è.
+    if (modale) box.setAttribute('aria-modal', 'true');
 
     var h = document.createElement('h2');
     h.id = 'ck-titolo';
@@ -323,8 +332,17 @@
     box.appendChild(azioni);
     dialogo.appendChild(box);
     document.body.appendChild(dialogo);
-    document.addEventListener('keydown', tastiera, true);
-    box.querySelector('button').focus();
+
+    if (modale) {
+      // Focus trattenuto: con la pagina oscurata, uscire con Tab porterebbe su contenuti che non
+      // si possono usare finché la scelta non è fatta.
+      document.addEventListener('keydown', tastiera, true);
+      box.querySelector('button').focus();
+    } else if (soloDettaglio) {
+      // Riaperto dal footer: chi ha premuto "Preferenze" si aspetta di arrivarci col focus.
+      // All'apertura automatica invece non si sposta, per non interrompere la lettura.
+      box.querySelector('button').focus();
+    }
   }
 
   /* ---------------------------------------------------------------- avvio */
