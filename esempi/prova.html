@@ -10,6 +10,7 @@
   window.consensoConfig = {
     versionePolicy: 1,
     consentMode: true,
+    posizione: new URLSearchParams(location.search).get('pos') || 'modale',
     urlInformativa: '/privacy'
   };
 </script>
@@ -44,6 +45,11 @@ richiesta verso googletagmanager, trustindex o google.com/maps.</p>
 <h2>Recensioni (marketing)</h2>
 <script type="text/plain" data-consent="marketing" data-src="https://cdn.trustindex.io/loader.js"></script>
 <p>Lo script Trustindex è inerte finché non c'è consenso.</p>
+
+<h2>Posizione</h2>
+<p>Prova le varianti: <a href="?pos=modale">modale</a> · <a href="?pos=basso">basso</a> ·
+<a href="?pos=alto">alto</a> · <a href="?pos=angolo">angolo</a>
+(dopo aver scelto, usa <em>Revoca e ricarica</em> per rivedere il banner).</p>
 
 <h2>Comandi</h2>
 <p>
