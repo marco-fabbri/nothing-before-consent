@@ -85,8 +85,26 @@ chiesto, non una profilazione.
 | `versionePolicy` | `1` | alzandola, il consenso viene richiesto di nuovo invece di essere ereditato |
 | `consentMode` | `false` | emette i segnali Google con tutto su `denied` prima del caricamento |
 | `urlInformativa` | — | link mostrato nel banner |
+| `posizione` | `modale` | `modale`, `basso`, `alto`, `angolo` |
 | `chiave` | `consenso-kit` | nome della voce in `localStorage` |
 | `testi` | — | sovrascrive singole stringhe |
+
+### Posizione
+
+| Valore | Come appare | Quando conviene |
+|---|---|---|
+| `modale` | pannello centrato, pagina oscurata | quando la scelta deve essere la prima cosa che si fa |
+| `basso` | barra in fondo, pagina leggibile | il default sensato per la maggior parte dei siti |
+| `alto` | barra in cima | se in fondo alla pagina c'è già altro (widget, chat) |
+| `angolo` | riquadro in basso a destra, barra sotto i 40em | quando il banner deve farsi notare poco |
+
+Solo `modale` oscura la pagina e trattiene il focus con Tab; le altre lasciano leggere e navigare.
+Non è una scorciatoia: **il blocco delle terze parti è tecnico e vale comunque**, quindi una barra
+meno invadente non concede niente in più. Anzi, un pannello che copre il contenuto finché non si
+decide somiglia a un muro, che è la cosa da evitare.
+
+Nelle varianti non modali `aria-modal` **non** viene dichiarato: dirlo mentre la pagina resta
+navigabile farebbe credere a chi usa uno screen reader di essere bloccato quando non lo è.
 
 Lingua letta da `<html lang>`: italiano e inglese, con fallback italiano.
 
@@ -117,6 +135,36 @@ passa a qualcun altro resterebbe un legame silenzioso.
 Quando esce una versione nuova: leggi `CHANGELOG.md`, ricopia i due file nei siti che vuoi
 aggiornare, una PR per sito. Per sapere se un sito è indietro, apri il suo `consent.js` e guarda la
 prima riga.
+
+## Serve un database dei consensi?
+
+**No, non per questi siti** — e volerlo sarebbe controproducente.
+
+L'art. 7 GDPR chiede al titolare di **essere in grado di dimostrare** che il consenso è stato
+prestato. Da lì nasce l'idea di registrarlo su un server. Ma per un sito senza account, dimostrare
+il consenso di un visitatore anonimo significherebbe **identificarlo**: salvare IP, impronta del
+browser o un identificatore univoco. Si finirebbe a raccogliere più dati personali di quanti se ne
+raccolgano senza registro, per provare di averne raccolti pochi. Il rimedio peggiore del male.
+
+Quello che si dimostra, e che basta, è **il meccanismo**:
+
+1. **cosa ha scelto quella persona**: sta nel suo browser, con data e versione della policy — è il
+   `{ versione, quando, statistiche, marketing }` che il kit salva. Se contesta, quel dato è nel suo
+   dispositivo, dove deve stare;
+2. **cosa chiedeva il banner in quel momento**: sta in git. La cronologia di `consent.js`, dei testi
+   e della `versionePolicy` racconta quali categorie esistevano, come erano descritte e da quando.
+   È una prova datata e non riscrivibile a posteriori, che è esattamente ciò che serve;
+3. **che prima della scelta non partisse nulla**: si dimostra aprendo il sito con la scheda Rete.
+
+Per questo la `versionePolicy` non è un dettaglio: legare la scelta a un numero, e alzarlo quando i
+servizi cambiano, è ciò che impedisce di sostenere che un consenso dato nel 2026 per due servizi
+valga nel 2027 per cinque.
+
+**Quando un registro serve davvero**: newsletter con doppia conferma, registrazione di account,
+marketing verso una persona identificata. Lì il consenso riguarda un individuo che hai già
+identificato, e il log ha senso perché non aggiunge dati che non avevi. Se un giorno uno di questi
+siti aggiunge una newsletter, il consenso all'iscrizione è un'altra cosa rispetto a questo banner e
+va gestito dove vivono gli iscritti.
 
 ## Verifica, prima di dire che funziona
 

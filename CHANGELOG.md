@@ -3,6 +3,17 @@
 Ogni sito tiene una copia di `consent.js` con la versione scritta nella prima riga. Per sapere se
 un sito è indietro, apri quel file e confronta con questo elenco.
 
+## 1.1.0 — 1 agosto 2026
+
+- **posizione configurabile**: `modale` (come prima), `basso`, `alto`, `angolo`. Solo la variante
+  modale oscura la pagina e trattiene il focus; le altre lasciano leggere e navigare, il che è
+  lecito perché il blocco delle terze parti è tecnico e vale comunque.
+- nelle varianti non modali `aria-modal` non viene più dichiarato: affermarlo mentre la pagina
+  resta navigabile inganna chi usa uno screen reader.
+- il focus non viene spostato all'apertura automatica di un banner non modale — interromperebbe la
+  lettura — ma viene spostato quando è l'utente ad aprire le preferenze dal footer.
+- README: sezione sul perché **non** serve un database dei consensi per siti senza account.
+
 ## 1.0.0 — 1 agosto 2026
 
 Prima versione, usabile.
