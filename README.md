@@ -1,11 +1,23 @@
 # consent-kit
 
-A consent banner with **prior blocking**, for static sites served by Cloudflare. No dependencies,
-two files to copy, no subscription.
+A consent banner with **prior blocking**, for any site whose HTML you can edit. No dependencies, two
+files to copy, no subscription.
 
 It comes from a concrete problem: three sites loading Google Analytics, maps, reviews and booking
 widgets **before** the visitor could say anything. A banner that merely informs solves none of it —
 it declares a consent that was never given.
+
+**What it needs from a site**, which is the honest version of who this is for: you must be able to
+put a script first in the `<head>` and to edit the markup of the third parties themselves, because
+that is where the blocking lives. Nothing else. The kit is not tied to a host, a framework or a
+generator — it runs on a Ghost theme, on an Astro build and on a folder of static HTML, which is
+what the three sites behind it are. The one optional feature that needs a server is the geographic
+regime: an endpoint of your own answering `{"consentRequired": …}`, and reading the visitor's country
+at the edge is one way of doing it rather than the way.
+
+**What it is not for.** It has no TCF/IAB support, so an ad-tech setup that requires the consent
+string will not be served by it. It has three fixed categories. And the list of tracker domains the
+watchdog knows is indicative and ages — it catches an oversight, it does not certify anything.
 
 > **What it is not.** This kit produces working code and **text templates**. It is not legal advice
 > and it does not include the regulatory updates you pay for with a subscription to something like
