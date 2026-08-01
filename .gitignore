@@ -1,2 +1,6 @@
 .DS_Store
 node_modules/
+
+# Per-machine agent settings. Two agents work in this repo now, and this is the one file each of
+# them writes without being asked — staybycity ignores it for the same reason.
+.claude/settings.local.json
