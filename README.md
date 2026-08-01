@@ -1,180 +1,211 @@
 # consent-kit
 
-Banner di consenso con **blocco preventivo**, per siti statici serviti da Cloudflare. Nessuna
-dipendenza, due file da copiare, niente abbonamenti.
+A consent banner with **prior blocking**, for static sites served by Cloudflare. No dependencies,
+two files to copy, no subscription.
 
-Nasce da un problema concreto: tre siti che caricano Google Analytics, mappe, recensioni e widget
-di prenotazione **prima** che il visitatore possa dire qualcosa. Un banner che si limita ad avvisare
-non risolve niente — anzi dichiara un consenso che non è stato dato.
+It comes from a concrete problem: three sites loading Google Analytics, maps, reviews and booking
+widgets **before** the visitor could say anything. A banner that merely informs solves none of it —
+it declares a consent that was never given.
 
-> **Cosa non è.** Questo kit produce codice funzionante e **modelli di testo**. Non è consulenza
-> legale e non include l'aggiornamento normativo che si paga con un abbonamento a un servizio come
-> Iubenda. I testi in `testi/` vanno letti e validati da chi risponde per il titolare.
+> **What it is not.** This kit produces working code and **text templates**. It is not legal advice
+> and it does not include the regulatory updates you pay for with a subscription to something like
+> Iubenda. The texts in `texts/` must be read and validated by whoever answers for the data
+> controller.
 
-## Il punto: bloccare, non avvisare
+## The point: block, don't announce
 
-Le risorse di terze parti si marcano nel markup in modo che il browser **non possa** caricarle:
+Third-party resources are marked in the markup so the browser **cannot** load them:
 
 ```html
-<!-- script esterno -->
-<script type="text/plain" data-consent="statistiche"
+<!-- external script -->
+<script type="text/plain" data-consent="analytics"
         data-src="https://www.googletagmanager.com/gtag/js?id=G-XXXX"></script>
 
-<!-- script inline -->
-<script type="text/plain" data-consent="statistiche">
+<!-- inline script -->
+<script type="text/plain" data-consent="analytics">
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('config', 'G-XXXX');
 </script>
 
-<!-- iframe (mappe, video) -->
+<!-- iframe (maps, video) -->
 <iframe data-consent="marketing"
         data-consent-src="https://www.google.com/maps/embed?pb=..."
-        data-consent-etichetta="la mappa dello studio"></iframe>
+        data-consent-label="the studio's map"></iframe>
 ```
 
-`type="text/plain"` non è eseguibile e `data-src` non è `src`: finché manca il consenso non parte
-nessuna richiesta, nemmeno la risoluzione DNS. È il motivo per cui il blocco deve stare nel markup:
-qualsiasi meccanismo che intervenga dopo arriva quando la richiesta è già partita.
+`type="text/plain"` is not executable and `data-src` is not `src`: until consent exists no request
+leaves, not even a DNS lookup. That is why the blocking must live in the markup: any mechanism that
+steps in later arrives once the request has already gone.
 
-Al posto di un iframe bloccato compare un **segnaposto** che dice cosa manca e permette di
-sbloccarlo lì, senza andare a cercare il banner.
+In place of a blocked iframe a **placeholder** appears, saying what is missing and letting you
+unblock it there, without going to look for the banner.
 
-## Installazione
+## Installation
 
-1. copia `src/consent.js` e `src/consent.css` nel sito
-2. metti il CSS nel `<head>` e **`consent.js` come primo script**, prima di qualunque terza parte:
+1. copy `src/consent.js` and `src/consent.css` into the site
+2. put the CSS in the `<head>` and **`consent.js` as the first script**, before any third party:
 
 ```html
 <link rel="stylesheet" href="/assets/consent.css">
 <script>
-  window.consensoConfig = {
-    versionePolicy: 1,                    // alzala quando cambiano i servizi: richiede di nuovo
-    consentMode: true,                    // solo se il sito usa Google Analytics o Ads
-    urlInformativa: '/privacy-policy/'
+  window.consentConfig = {
+    policyVersion: 1,                     // raise it when the services change: asks again
+    consentMode: true,                    // only if the site uses Google Analytics or Ads
+    policyUrl: '/privacy-policy/'
   };
 </script>
 <script src="/assets/consent.js"></script>
 ```
 
-3. marca le terze parti come sopra
-4. aggiungi nel footer un link per tornare sulla scelta — **senza revoca facile il consenso non è
-   valido**, perché ritirarlo deve costare quanto darlo:
+3. mark the third parties as above
+4. add a link in the footer that brings the choice back — **without an easy withdrawal the consent
+   is not valid**, because taking it back must cost what giving it cost:
 
 ```html
-<button type="button" onclick="window.consenso.apri()">Preferenze cookie</button>
+<button type="button" onclick="window.consent.open()">Cookie preferences</button>
 ```
 
-`consent.js` **deve** stare prima di GA4: i segnali di Consent Mode servono solo se arrivano prima.
+5. **register the site in `consumers.csv`** — one line with site, repo, the folder holding the two
+   files, and branch. It is the step that makes every future release arrive at that site as a PR: an
+   unregistered site receives nothing, and in silence. No mechanism here can notice a copy that
+   never declared it exists.
 
-## Categorie
+`consent.js` **must** come before GA4: the Consent Mode signals only count if they arrive first.
 
-| Categoria | Cosa contiene | Consenso |
+## Categories
+
+| Category | What it holds | Consent |
 |---|---|---|
-| `necessari` | funzionamento del sito, anti-spam dei moduli (es. Turnstile) | non richiesto |
-| `statistiche` | analytics | richiesto |
-| `marketing` | mappe, recensioni, video, affiliazione | richiesto |
+| `necessary` | the site working, form anti-spam (e.g. Turnstile) | not required |
+| `analytics` | analytics | required |
+| `marketing` | maps, reviews, video, affiliation | required |
 
-Turnstile sta fra i necessari perché protegge un modulo dallo spam: è la funzione che l'utente ha
-chiesto, non una profilazione.
+Turnstile is among the necessary ones because it protects a form from spam: it is the function the
+user asked for, not profiling.
 
-## Configurazione
+## Configuration
 
-| Chiave | Default | A cosa serve |
+| Key | Default | What it does |
 |---|---|---|
-| `versionePolicy` | `1` | alzandola, il consenso viene richiesto di nuovo invece di essere ereditato |
-| `consentMode` | `false` | emette i segnali Google con tutto su `denied` prima del caricamento |
-| `urlInformativa` | — | link mostrato nel banner |
-| `posizione` | `modale` | `modale`, `basso`, `alto`, `angolo` |
-| `chiave` | `consenso-kit` | nome della voce in `localStorage` |
-| `testi` | — | sovrascrive singole stringhe |
+| `policyVersion` | `1` | raising it asks for consent again instead of inheriting the old answer |
+| `consentMode` | `false` | emits the Google signals with everything `denied` before anything loads |
+| `policyUrl` | — | the link shown in the banner |
+| `position` | `modal` | `modal`, `bottom`, `top`, `corner` |
+| `storageKey` | `consent-kit` | the name of the `localStorage` entry |
+| `texts` | — | overrides individual strings |
+| `watchdog` | `true` | warns in the console if a known tracker got through unmarked |
+| `reloadAfterChoice` | `false` | reloads when something is switched on, for scripts that stay mute otherwise |
+| `regimeUrl` | — | endpoint that says whether prior consent is owed for this visitor |
+| `regimeTimeout` | `1500` | how long to wait for it before applying the strict regime |
 
-### Posizione
+### Position
 
-| Valore | Come appare | Quando conviene |
+| Value | How it looks | When it suits |
 |---|---|---|
-| `modale` | pannello centrato, pagina oscurata | quando la scelta deve essere la prima cosa che si fa |
-| `basso` | barra in fondo, pagina leggibile | il default sensato per la maggior parte dei siti |
-| `alto` | barra in cima | se in fondo alla pagina c'è già altro (widget, chat) |
-| `angolo` | riquadro in basso a destra, barra sotto i 40em | quando il banner deve farsi notare poco |
+| `modal` | centred panel, page dimmed | when the choice must be the first thing you do |
+| `bottom` | bar at the foot, page readable | the sensible default for most sites |
+| `top` | bar at the top | if the foot of the page already has something (widgets, chat) |
+| `corner` | box at bottom right, a bar below 40em | when the banner should draw little attention |
 
-Solo `modale` oscura la pagina e trattiene il focus con Tab; le altre lasciano leggere e navigare.
-Non è una scorciatoia: **il blocco delle terze parti è tecnico e vale comunque**, quindi una barra
-meno invadente non concede niente in più. Anzi, un pannello che copre il contenuto finché non si
-decide somiglia a un muro, che è la cosa da evitare.
+Only `modal` dims the page and holds the focus with Tab; the others leave it readable and navigable.
+It is not a shortcut: **the blocking of third parties is technical and holds anyway**, so a less
+intrusive bar concedes nothing extra. If anything, a panel that covers the content until you decide
+looks like a wall, which is the thing to avoid.
 
-Nelle varianti non modali `aria-modal` **non** viene dichiarato: dirlo mentre la pagina resta
-navigabile farebbe credere a chi usa uno screen reader di essere bloccato quando non lo è.
+In the non-modal variants `aria-modal` is **not** declared: saying it while the page stays navigable
+would make someone using a screen reader believe they are trapped when they are not.
 
-Lingua letta da `<html lang>`: italiano e inglese, con fallback italiano.
+Language read from `<html lang>`: English and Italian, falling back to English. The project speaks
+English; the banner speaks the visitor's language, which is why both dictionaries stay.
 
-Colori via variabili CSS, da mettere nel foglio del sito:
+Colours through CSS variables, to be set in the site's own stylesheet:
 
 ```css
-:root { --ck-primario: #29a9e0; --ck-primario-testo: #fff; }
+:root { --ck-primary: #29a9e0; --ck-primary-text: #fff; }
 ```
+
+## The geographic regime
+
+Where prior consent is owed — the EU, the EEA and the UK — nothing loads until the visitor answers.
+Everywhere else the law asks for information rather than permission, so a notice appears instead and
+the services start.
+
+Only the server knows where a request comes from, so the decision is its: `regimeUrl` points at an
+endpoint that answers `{"consentRequired": true|false}`. Until it answers everything stays blocked,
+and **any failure counts as "consent required"** — being wrong by showing a banner to someone who
+did not need one is an annoyance, being wrong the other way is a violation.
+
+Whoever gets the notice is recorded as `regime: "notice"`, never as a consent: calling "yes"
+something nobody said would be a lie written into the reader's own browser.
 
 ## API
 
 ```js
-window.consenso.apri()    // riapre la scelta, con il dettaglio già aperto
-window.consenso.stato()   // { versione, quando, statistiche, marketing } oppure null
-window.consenso.revoca()  // cancella la scelta e ricarica
-window.addEventListener('consenso:cambiato', e => { /* e.detail */ });
+window.consent.open()     // reopens the choice, with the detail already unfolded
+window.consent.state()    // { version, when, analytics, marketing, regime } or null
+window.consent.revoke()   // clears the choice and reloads
+window.addEventListener('consent:changed', e => { /* e.detail */ });
 ```
 
-L'evento serve a chi deve fare qualcosa di più di un `<script>`: per esempio far partire un widget
-solo dopo il consenso, mantenendo un caricamento differito già esistente.
+The event is for whoever needs to do more than a `<script>`: starting a widget only after consent,
+say, while keeping an existing deferred load.
 
-## Come si aggiorna un sito
+## How a site is updated
 
-Il kit **non è una dipendenza**: ogni sito ne tiene una copia, con la versione scritta in cima al
-file. Questo perché un sito può cambiare mani — se dipendesse da questo repo privato, il giorno che
-passa a qualcun altro resterebbe un legame silenzioso.
+The kit is **not a dependency**: every site keeps a copy, with the version written at the top of the
+file. That is because a site can change hands — if it depended on this private repo, the day it
+passes to somebody else a silent tie would remain.
 
-Quando esce una versione nuova: leggi `CHANGELOG.md`, ricopia i due file nei siti che vuoi
-aggiornare, una PR per sito. Per sapere se un sito è indietro, apri il suo `consent.js` e guarda la
-prima riga.
+**When a release comes out there is nothing to remember.** You publish a `v<version>` tag and
+`announce.yml` opens a PR on every site in `consumers.csv`, carrying the `CHANGELOG.md` entries
+between that site's version and the new one. The merge stays a decision of whoever answers for the
+site. The design and the reasoning are in
+[`docs/announcing-releases.md`](docs/announcing-releases.md).
 
-## Serve un database dei consensi?
+By hand remains possible and is sometimes right: copy the two files and open the PR yourself. To
+find out whether a site is behind, open its `consent.js` and read the first line.
 
-**No, non per questi siti** — e volerlo sarebbe controproducente.
+## Do you need a consent database?
 
-L'art. 7 GDPR chiede al titolare di **essere in grado di dimostrare** che il consenso è stato
-prestato. Da lì nasce l'idea di registrarlo su un server. Ma per un sito senza account, dimostrare
-il consenso di un visitatore anonimo significherebbe **identificarlo**: salvare IP, impronta del
-browser o un identificatore univoco. Si finirebbe a raccogliere più dati personali di quanti se ne
-raccolgano senza registro, per provare di averne raccolti pochi. Il rimedio peggiore del male.
+**No, not for these sites** — and wanting one would be counterproductive.
 
-Quello che si dimostra, e che basta, è **il meccanismo**:
+Article 7 GDPR asks the controller to **be able to demonstrate** that consent was given. That is
+where the idea of logging it on a server comes from. But for a site with no accounts, demonstrating
+an anonymous visitor's consent would mean **identifying them**: storing an IP, a browser
+fingerprint, or a unique identifier. You would end up collecting more personal data than you collect
+without a log, in order to prove you collected little. The remedy worse than the disease.
 
-1. **cosa ha scelto quella persona**: sta nel suo browser, con data e versione della policy — è il
-   `{ versione, quando, statistiche, marketing }` che il kit salva. Se contesta, quel dato è nel suo
-   dispositivo, dove deve stare;
-2. **cosa chiedeva il banner in quel momento**: sta in git. La cronologia di `consent.js`, dei testi
-   e della `versionePolicy` racconta quali categorie esistevano, come erano descritte e da quando.
-   È una prova datata e non riscrivibile a posteriori, che è esattamente ciò che serve;
-3. **che prima della scelta non partisse nulla**: si dimostra aprendo il sito con la scheda Rete.
+What you demonstrate, and what suffices, is **the mechanism**:
 
-Per questo la `versionePolicy` non è un dettaglio: legare la scelta a un numero, e alzarlo quando i
-servizi cambiano, è ciò che impedisce di sostenere che un consenso dato nel 2026 per due servizi
-valga nel 2027 per cinque.
+1. **what that person chose**: it is in their browser, with the date and the policy version — the
+   `{ version, when, analytics, marketing }` the kit stores. If they dispute it, that datum is on
+   their device, where it belongs;
+2. **what the banner was asking at that moment**: it is in git. The history of `consent.js`, of the
+   texts and of `policyVersion` records which categories existed, how they were described and since
+   when. It is dated evidence that cannot be rewritten afterwards, which is exactly what is needed;
+3. **that nothing ran before the choice**: demonstrated by opening the site with the Network tab.
 
-**Quando un registro serve davvero**: newsletter con doppia conferma, registrazione di account,
-marketing verso una persona identificata. Lì il consenso riguarda un individuo che hai già
-identificato, e il log ha senso perché non aggiunge dati che non avevi. Se un giorno uno di questi
-siti aggiunge una newsletter, il consenso all'iscrizione è un'altra cosa rispetto a questo banner e
-va gestito dove vivono gli iscritti.
+This is why `policyVersion` is not a detail: tying the choice to a number, and raising it when the
+services change, is what stops anyone claiming that a consent given in 2026 for two services holds
+in 2027 for five.
 
-## Verifica, prima di dire che funziona
+**When a log really is needed**: newsletters with double opt-in, account registration, marketing to
+an identified person. There the consent concerns an individual you have already identified, and the
+log makes sense because it adds no data you did not have. If one of these sites ever adds a
+newsletter, the subscription consent is a different thing from this banner and belongs where the
+subscribers live.
 
-Il criterio non è "il banner appare", è **"prima del consenso non parte niente"**:
+## Verify, before saying it works
 
-1. finestra in incognito, scheda **Rete** aperta, ricarica: nessuna richiesta verso le terze parti
-2. accetta → le richieste partono; ricarica → partono senza chiedere di nuovo
-3. rifiuta → non parte niente, e resta così dopo il ricaricamento
-4. revoca dal footer → si torna allo stato iniziale
-5. **tastiera**: raggiungi e attiva i bottoni con Tab e Invio, senza mouse
-6. con `consentMode`, in console `dataLayer[0]` dev'essere `consent default` con tutto `denied`
+The test is not "the banner appears", it is **"nothing runs before consent"**:
 
-Il punto 1 è l'unico che distingue questo kit da un banner decorativo.
+1. private window, **Network** tab open, reload: no request towards the third parties
+2. accept → the requests go; reload → they go without asking again
+3. reject → nothing goes, and it stays that way after a reload
+4. revoke from the footer → back to the initial state
+5. **keyboard**: reach and press the buttons with Tab and Enter, without a mouse
+6. with `consentMode`, in the console `dataLayer[0]` must be `consent default` with everything
+   `denied`
+
+Point 1 is the only one that tells this kit apart from a decorative banner.

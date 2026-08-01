@@ -1,6 +1,6 @@
 <!--
-  Privacy notice template — consent-kit 1.0.0
-  Fill in: {{TITOLARE}}, {{EMAIL_CONTATTO}}, {{DOMINIO}}, {{DATA_AGGIORNAMENTO}},
+  Privacy notice template — consent-kit 2.0.0
+  Fill in: {{CONTROLLER}}, {{CONTACT_EMAIL}}, {{DOMAIN}}, {{UPDATED}},
   the list of services, and keep only the sections that apply (not every site has a contact form).
 
   On postal address: Art. 13 GDPR requires the controller's "identity and contact details", and a
@@ -8,21 +8,21 @@
   economic activity have separate e-commerce disclosure duties, which usually live on a "legal
   notice" page.
 
-  English version of informativa-privacy.it.md. Keep the two in step.
+  English version of privacy-notice.it.md. Keep the two in step.
   To be reviewed by whoever answers for the data controller — this is a template, not legal advice.
 -->
 
 # Privacy notice
 
-Last updated: {{DATA_AGGIORNAMENTO}}
+Last updated: {{UPDATED}}
 
-This notice explains what data {{DOMINIO}} collects, why, for how long, and what you can ask for.
+This notice explains what data {{DOMAIN}} collects, why, for how long, and what you can ask for.
 It is written to be read: where a sentence is vague, that is a defect to fix, not caution.
 
 ## Data controller
 
-**{{TITOLARE}}**
-Contact for anything concerning personal data: **{{EMAIL_CONTATTO}}**
+**{{CONTROLLER}}**
+Contact for anything concerning personal data: **{{CONTACT_EMAIL}}**
 
 No Data Protection Officer has been appointed: none of the cases requiring one applies.
 
@@ -56,7 +56,7 @@ data** beyond what is needed for us to get back to you.
 ### Data collected by third-party services
 
 This site embeds services hosted by other providers. They are not loaded until you have explicitly
-chosen, as described in the [cookie policy]({{URL_COOKIE_POLICY}}), where each one is listed.
+chosen, as described in the [cookie policy]({{COOKIE_POLICY_URL}}), where each one is listed.
 
 **Legal basis**: consent (Art. 6(1)(a) GDPR), which you may withdraw at any time without affecting
 the lawfulness of processing carried out before withdrawal.
@@ -86,7 +86,7 @@ processing, **portability**, and you can **object** to processing based on legit
 Where processing is based on consent, you can **withdraw** it at any time — for third-party
 services, through the *Cookie preferences* link at the bottom of every page.
 
-Send requests to **{{EMAIL_CONTATTO}}**; they are answered within one month.
+Send requests to **{{CONTACT_EMAIL}}**; they are answered within one month.
 
 You also have the right to lodge a **complaint with the Italian Data Protection Authority**
 (www.garanteprivacy.it), or with the supervisory authority of your country of residence, if you
