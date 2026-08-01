@@ -125,6 +125,25 @@ Colours through CSS variables, to be set in the site's own stylesheet:
 :root { --ck-primary: #29a9e0; --ck-primary-text: #fff; }
 ```
 
+| Variable | Default | What it paints |
+|---|---|---|
+| `--ck-primary` / `--ck-primary-text` | `#2563eb` / `#fff` | the two equal-weight buttons |
+| `--ck-surface` / `--ck-text` / `--ck-text-muted` | `#fff` / `#1f2937` / `#4b5563` | the panel and its type |
+| `--ck-border` | `#e5e7eb` | the rules between the categories, inside the panel |
+| `--ck-panel-border` | `#6b7280` | the panel's own outline, against the page |
+| `--ck-backdrop` | `rgba(15,23,42,.55)` | the dimming, in the `modal` variant only |
+| `--ck-radius` | `10px` | the corner |
+
+**`--ck-panel-border` is the one to look at.** A banner sits on a page whose colour it does not know,
+so the default is a neutral grey that holds against both a white page (4.8:1) and a near-black one
+(3.7:1) — the 3:1 that WCAG 1.4.11 asks for the boundary of a user interface component. It is a
+compromise by construction: on a site with a palette of its own, a neutral grey beside a warm ink
+reads as an accident. Override it with something of the site's own that still clears 3:1.
+
+Setting some of these and not others is not a mistake — the defaults are meant to work alone — but
+a variable added by a later release will arrive at its default until the site maps it. That is what
+a minor version is telling you to go and check.
+
 ## The geographic regime
 
 Where prior consent is owed — the EU, the EEA and the UK — nothing loads until the visitor answers.
