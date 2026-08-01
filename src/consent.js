@@ -1,208 +1,207 @@
 /*!
- * consent-kit 1.2.1 — banner di consenso con blocco preventivo.
- * Copia versionata: se questo numero è più basso di quello nel CHANGELOG del kit, il sito è indietro.
+ * consent-kit 2.0.0 — consent banner with prior blocking.
+ * Versioned copy: if this number is lower than the one in the kit's CHANGELOG, the site is behind.
  *
- * Il punto di questo file non è mostrare un banner: è impedire che le terze parti partano prima
- * della scelta. Un banner che non blocca niente è la situazione più contestata in assoluto, perché
- * dichiara un consenso che non c'è.
+ * The point of this file is not to show a banner: it is to stop third parties from running before
+ * the choice is made. A banner that blocks nothing is the most contested arrangement of all,
+ * because it declares a consent that was never given.
  *
- * Come si marcano le risorse da bloccare:
+ * How resources are marked for blocking:
  *
- *   <script type="text/plain" data-consent="statistiche" data-src="https://..."></script>
- *   <script type="text/plain" data-consent="statistiche">codice inline</script>
- *   <iframe data-consent="marketing" data-consent-src="https://..." data-consent-etichetta="mappa"></iframe>
+ *   <script type="text/plain" data-consent="analytics" data-src="https://..."></script>
+ *   <script type="text/plain" data-consent="analytics">inline code</script>
+ *   <iframe data-consent="marketing" data-consent-src="https://..." data-consent-label="the map"></iframe>
  *
- * `type="text/plain"` non è eseguibile per il browser e `data-src` non è `src`: finché non c'è
- * consenso non parte nessuna richiesta, nemmeno il DNS. È il motivo per cui il blocco va fatto nel
- * markup e non a runtime: qualsiasi cosa venga fatta dopo, la richiesta è già partita.
+ * `type="text/plain"` is not executable and `data-src` is not `src`: until consent exists no
+ * request leaves, not even a DNS lookup. That is why the blocking belongs in the markup and not at
+ * runtime: whatever is done afterwards arrives once the request has already gone.
  */
 (function () {
   'use strict';
 
-  var VERSIONE_KIT = '1.2.1';
-  var cfg = window.consensoConfig || {};
+  var KIT_VERSION = '2.0.0';
+  var cfg = window.consentConfig || {};
 
-  // La versione della policy sta dentro la scelta salvata: quando cambiano i servizi la si alza e
-  // il consenso viene richiesto di nuovo, invece di ereditare un "sì" dato per altri destinatari.
-  var VERSIONE_POLICY = cfg.versionePolicy || 1;
-  var CHIAVE = cfg.chiave || 'consenso-kit';
-  var CATEGORIE = ['statistiche', 'marketing'];
+  // The policy version lives inside the stored choice: when the services change you raise it and
+  // consent is asked again, instead of inheriting a "yes" given for other recipients.
+  var POLICY_VERSION = cfg.policyVersion || 1;
+  var STORAGE_KEY = cfg.storageKey || 'consent-kit';
 
-  // localStorage e non un cookie: così il banner non introduce esattamente ciò che deve governare.
-  // Non viene spedito a nessuno e non compare in una cookie policy.
-  function leggi() {
+  // localStorage rather than a cookie: so the banner does not introduce the very thing it governs.
+  // It is sent to nobody and appears in no cookie policy.
+  function read() {
     try {
-      var g = JSON.parse(localStorage.getItem(CHIAVE) || 'null');
-      if (!g || g.versione !== VERSIONE_POLICY) return null;
-      return g;
+      var stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+      if (!stored || stored.version !== POLICY_VERSION) return null;
+      return stored;
     } catch (e) {
-      return null; // localStorage negato (Safari in privata, o browser irrigidito): si richiede.
+      return null; // localStorage denied (Safari private, or a hardened browser): ask again.
     }
   }
 
-  function salva(scelta) {
+  function save(choice) {
     try {
-      localStorage.setItem(CHIAVE, JSON.stringify({
-        versione: VERSIONE_POLICY,
-        quando: new Date().toISOString(),
-        statistiche: !!scelta.statistiche,
-        marketing: !!scelta.marketing,
-        regime: scelta.regime || 'consenso'
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        version: POLICY_VERSION,
+        when: new Date().toISOString(),
+        analytics: !!choice.analytics,
+        marketing: !!choice.marketing,
+        regime: choice.regime || 'consent'
       }));
     } catch (e) {
-      /* Se non si può salvare, la scelta vale per questa pagina e verrà richiesta di nuovo:
-         meglio richiedere due volte che assumere un consenso mai registrato. */
+      /* If it cannot be stored, the choice holds for this page and will be asked again: better to
+         ask twice than to assume a consent that was never recorded. */
     }
   }
 
-  /* ---------------------------------------------------------------- Consent Mode di Google
-   * Va emesso PRIMA che GA4 venga caricato, altrimenti non serve a niente: per questo consent.js
-   * deve stare per primo nel <head>. Tutto su "denied" di default significa nessun cookie prima
-   * della scelta; all'accettazione si passa a "granted".
+  /* ---------------------------------------------------------------- Google Consent Mode
+   * Must be emitted BEFORE GA4 is loaded, or it is worth nothing: which is why consent.js has to
+   * come first in the <head>. Everything on "denied" by default means no cookie before the choice;
+   * on acceptance it turns to "granted".
    */
-  function consentMode(stato) {
+  function consentMode(state) {
     if (!cfg.consentMode) return;
     window.dataLayer = window.dataLayer || [];
     function gtag() { window.dataLayer.push(arguments); }
-    gtag('consent', stato.iniziale ? 'default' : 'update', {
-      ad_storage: stato.marketing ? 'granted' : 'denied',
-      ad_user_data: stato.marketing ? 'granted' : 'denied',
-      ad_personalization: stato.marketing ? 'granted' : 'denied',
-      analytics_storage: stato.statistiche ? 'granted' : 'denied'
+    gtag('consent', state.initial ? 'default' : 'update', {
+      ad_storage: state.marketing ? 'granted' : 'denied',
+      ad_user_data: state.marketing ? 'granted' : 'denied',
+      ad_personalization: state.marketing ? 'granted' : 'denied',
+      analytics_storage: state.analytics ? 'granted' : 'denied'
     });
   }
 
-  /* ---------------------------------------------------------------- attivazione delle risorse */
+  /* ---------------------------------------------------------------- activating the resources */
 
-  // Ciò che il kit ha attivato di sua mano, e quando. Serve al guardiano per non segnalare se
-  // stesso: uno script attivato dopo il consenso ne chiama altri (GA4 chiama google-analytics.com),
-  // e quelli non sono nell'elenco. Confrontare gli indirizzi non basta, conta il momento.
-  var attivatiDalKit = [];
-  var momentoAttivazione = Infinity;
+  // What the kit activated itself, and when. The watchdog needs this so it does not report its own
+  // work: a script activated after consent calls others (GA4 calls google-analytics.com), and those
+  // are not in the list. Comparing addresses is not enough — the moment is what counts.
+  var activatedByKit = [];
+  var activationTime = Infinity;
 
-  function attivaScript(nodo) {
+  function activateScript(node) {
     var s = document.createElement('script');
-    for (var i = 0; i < nodo.attributes.length; i++) {
-      var a = nodo.attributes[i];
+    for (var i = 0; i < node.attributes.length; i++) {
+      var a = node.attributes[i];
       if (a.name === 'type' || a.name === 'data-src' || a.name.indexOf('data-consent') === 0) continue;
       s.setAttribute(a.name, a.value);
     }
-    var src = nodo.getAttribute('data-src');
-    if (momentoAttivazione === Infinity) momentoAttivazione = performance.now();
-    if (src) { s.src = src; attivatiDalKit.push(src); } else { s.text = nodo.textContent; }
-    nodo.parentNode.replaceChild(s, nodo);
+    var src = node.getAttribute('data-src');
+    if (activationTime === Infinity) activationTime = performance.now();
+    if (src) { s.src = src; activatedByKit.push(src); } else { s.text = node.textContent; }
+    node.parentNode.replaceChild(s, node);
   }
 
-  function attivaIframe(nodo) {
-    if (momentoAttivazione === Infinity) momentoAttivazione = performance.now();
-    attivatiDalKit.push(nodo.getAttribute('data-consent-src') || '');
-    var segnaposto = nodo.previousElementSibling;
-    if (segnaposto && segnaposto.classList.contains('ck-segnaposto')) segnaposto.remove();
-    nodo.src = nodo.getAttribute('data-consent-src');
-    nodo.removeAttribute('data-consent-src');
-    nodo.style.display = '';
+  function activateIframe(node) {
+    if (activationTime === Infinity) activationTime = performance.now();
+    activatedByKit.push(node.getAttribute('data-consent-src') || '');
+    var placeholder = node.previousElementSibling;
+    if (placeholder && placeholder.classList.contains('ck-placeholder')) placeholder.remove();
+    node.src = node.getAttribute('data-consent-src');
+    node.removeAttribute('data-consent-src');
+    node.style.display = '';
   }
 
-  // Un iframe bloccato lascerebbe un buco muto nella pagina. Il segnaposto dice cosa manca e offre
-  // due strade diverse, che è il punto:
+  // A blocked iframe would leave a mute hole in the page. The placeholder says what is missing and
+  // offers two different ways out, which is the point:
   //
-  //   "Mostra" carica SOLO quell'elemento, SOLO per questa visita, senza toccare le preferenze.
-  //   Premerlo è una richiesta esplicita di quel contenuto — chi ha rifiutato tutto può comunque
-  //   vedere dove si trova uno studio senza dover cambiare idea sul resto del sito.
+  //   "Show" loads ONLY that element, ONLY for this visit, without touching the preferences.
+  //   Pressing it is an explicit request for that content — someone who refused everything can
+  //   still see where a studio is without having to change their mind about the rest of the site.
   //
-  //   "Preferenze" apre il pannello, per chi invece vuole decidere una volta per tutte.
-  function costruisciSegnaposto(etichetta, mostra) {
+  //   "Manage consent" opens the panel, for whoever would rather decide once and for all.
+  function buildPlaceholder(label, show) {
     var box = document.createElement('div');
-    box.className = 'ck-segnaposto';
-    box.innerHTML = '<p>' + t('bloccato').replace('%s', escapeHtml(etichetta || t('contenuto'))) + '</p>';
-    var azioni = document.createElement('div');
-    azioni.className = 'ck-azioni';
-    // niente salva(): non è un consenso registrato, è un permesso per questo elemento e per ora
-    azioni.appendChild(bottone(t('mostraOra'), 'ck-btn-primario', mostra));
-    azioni.appendChild(bottone(t('sbloccaOra'), 'ck-btn-terziario', function () { apri(true); }));
-    box.appendChild(azioni);
+    box.className = 'ck-placeholder';
+    box.innerHTML = '<p>' + t('blocked').replace('%s', escapeHtml(label || t('thisContent'))) + '</p>';
+    var actions = document.createElement('div');
+    actions.className = 'ck-actions';
+    // no save(): this is not a recorded consent, it is permission for this element and for now
+    actions.appendChild(button(t('showNow'), 'ck-btn-primary', show));
+    actions.appendChild(button(t('manageConsent'), 'ck-btn-tertiary', function () { open(true); }));
+    box.appendChild(actions);
     return box;
   }
 
-  function metteSegnaposto(nodo) {
-    if (nodo.previousElementSibling && nodo.previousElementSibling.classList.contains('ck-segnaposto')) return;
-    var seg = costruisciSegnaposto(nodo.getAttribute('data-consent-etichetta'), function () {
-      attivaIframe(nodo);
+  function placeholderFor(node) {
+    if (node.previousElementSibling && node.previousElementSibling.classList.contains('ck-placeholder')) return;
+    var ph = buildPlaceholder(node.getAttribute('data-consent-label'), function () {
+      activateIframe(node);
     });
-    nodo.style.display = 'none';
-    nodo.parentNode.insertBefore(seg, nodo);
+    node.style.display = 'none';
+    node.parentNode.insertBefore(ph, node);
   }
 
-  // consent.js sta nel <head> — deve, per emettere i segnali Consent Mode prima di GA4 — quindi
-  // quando parte il <body> non esiste ancora. Toccare i nodi subito non troverebbe niente: gli
-  // script resterebbero inerti anche con il consenso già dato. Il Consent Mode va emesso subito,
-  // i nodi si toccano a documento pronto.
-  function quandoPronto(fn) {
+  // consent.js lives in the <head> — it must, to emit the Consent Mode signals before GA4 — so when
+  // it runs the <body> does not exist yet. Touching the nodes straight away would find nothing: the
+  // scripts would stay inert even with consent already given. Consent Mode is emitted immediately,
+  // the nodes are touched once the document is ready.
+  function whenReady(fn) {
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn);
     else fn();
   }
 
-  // Un widget che si disegna da solo (recensioni, feed) non ha un elemento da sostituire: c'è un
-  // contenitore vuoto e uno script che lo riempie. Il segnaposto va sul contenitore, e "Mostra"
-  // attiva gli script che lo alimentano, elencati per id in data-consent-attiva.
-  function metteSegnapostoContenitore(box) {
-    if (box.querySelector(':scope > .ck-segnaposto')) return;
-    var ids = (box.getAttribute('data-consent-attiva') || '').split(/\s+/).filter(Boolean);
-    var seg = costruisciSegnaposto(box.getAttribute('data-consent-etichetta'), function () {
+  // A widget that draws itself (reviews, feeds) has no element to replace: there is an empty
+  // container and a script that fills it. The placeholder goes on the container, and "Show"
+  // activates the scripts that feed it, listed by id in data-consent-activates.
+  function placeholderForContainer(box) {
+    if (box.querySelector(':scope > .ck-placeholder')) return;
+    var ids = (box.getAttribute('data-consent-activates') || '').split(/\s+/).filter(Boolean);
+    var ph = buildPlaceholder(box.getAttribute('data-consent-label'), function () {
       for (var i = 0; i < ids.length; i++) {
         var s = document.getElementById(ids[i]);
-        if (s && s.type === 'text/plain') attivaScript(s);
+        if (s && s.type === 'text/plain') activateScript(s);
       }
-      seg.remove();
+      ph.remove();
     });
-    box.appendChild(seg);
+    box.appendChild(ph);
   }
 
-  function applicaAiNodi(scelta) {
-    // I contenitori prima degli script: se lo script parte mentre il segnaposto è ancora lì, il
-    // widget si disegna sopra un riquadro che dice "bloccato".
-    var contenitori = document.querySelectorAll('[data-consent-segnaposto]');
-    for (var k = 0; k < contenitori.length; k++) {
-      var seg = contenitori[k].querySelector(':scope > .ck-segnaposto');
-      if (scelta[contenitori[k].getAttribute('data-consent')]) { if (seg) seg.remove(); }
-      else metteSegnapostoContenitore(contenitori[k]);
+  function applyToNodes(choice) {
+    // Containers before scripts: if the script runs while the placeholder is still there, the
+    // widget draws itself on top of a box that says "blocked".
+    var containers = document.querySelectorAll('[data-consent-placeholder]');
+    for (var k = 0; k < containers.length; k++) {
+      var ph = containers[k].querySelector(':scope > .ck-placeholder');
+      if (choice[containers[k].getAttribute('data-consent')]) { if (ph) ph.remove(); }
+      else placeholderForContainer(containers[k]);
     }
 
-    var script = document.querySelectorAll('script[type="text/plain"][data-consent]');
-    for (var i = 0; i < script.length; i++) {
-      if (scelta[script[i].getAttribute('data-consent')]) attivaScript(script[i]);
+    var scripts = document.querySelectorAll('script[type="text/plain"][data-consent]');
+    for (var i = 0; i < scripts.length; i++) {
+      if (choice[scripts[i].getAttribute('data-consent')]) activateScript(scripts[i]);
     }
 
-    var frame = document.querySelectorAll('iframe[data-consent-src]');
-    for (var j = 0; j < frame.length; j++) {
-      if (scelta[frame[j].getAttribute('data-consent')]) attivaIframe(frame[j]);
-      else metteSegnaposto(frame[j]);
+    var frames = document.querySelectorAll('iframe[data-consent-src]');
+    for (var j = 0; j < frames.length; j++) {
+      if (choice[frames[j].getAttribute('data-consent')]) activateIframe(frames[j]);
+      else placeholderFor(frames[j]);
     }
 
-    // Chi vuole reagire (per esempio far partire un widget solo dopo il consenso) ascolta questo.
-    window.dispatchEvent(new CustomEvent('consenso:cambiato', { detail: scelta }));
+    // Anyone who wants to react (starting a widget only after consent, say) listens for this.
+    window.dispatchEvent(new CustomEvent('consent:changed', { detail: choice }));
   }
 
-  // Molti script di terze parti si agganciano a DOMContentLoaded per cercare i propri contenitori.
-  // Attivarli dopo — cioè a documento pronto — li lascia inizializzati ma inerti: il loader di
-  // Trustindex, per dire, definisce le sue variabili globali e non disegna niente, senza un errore
-  // in console che lo dica. Prima del blocco funzionava perché era `async` nel <head>, quindi
-  // partiva durante il parsing.
+  // Many third-party scripts hook DOMContentLoaded to look for their own containers. Activating
+  // them afterwards — that is, once the document is ready — leaves them initialised but mute: the
+  // Trustindex loader, for one, defines its globals and draws nothing, with no console error to say
+  // so. Before the blocking it worked because it was `async` in the <head>, so it ran during parsing.
   //
-  // Quando il consenso è già noto si riproduce quella condizione: un osservatore attiva ogni script
-  // appena il parser lo aggiunge, senza aspettare la fine. Per il momento della scelta invece non
-  // c'è rimedio a runtime — la pagina è già costruita — e serve `ricaricaDopoScelta`.
-  function osservaEAttiva(scelta) {
+  // When consent is already known that condition can be reproduced: an observer activates each
+  // script as soon as the parser adds it, without waiting for the end. For the moment of the choice
+  // itself there is no runtime remedy — the page is already built — and `reloadAfterChoice` is what
+  // it takes.
+  function observeAndActivate(choice) {
     if (typeof MutationObserver === 'undefined') return null;
-    var obs = new MutationObserver(function (mutazioni) {
-      for (var m = 0; m < mutazioni.length; m++) {
-        var aggiunti = mutazioni[m].addedNodes;
-        for (var n = 0; n < aggiunti.length; n++) {
-          var nodo = aggiunti[n];
-          if (nodo.nodeType !== 1 || nodo.tagName !== 'SCRIPT') continue;
-          if (nodo.type !== 'text/plain') continue;
-          var cat = nodo.getAttribute('data-consent');
-          if (cat && scelta[cat]) attivaScript(nodo);
+    var obs = new MutationObserver(function (mutations) {
+      for (var m = 0; m < mutations.length; m++) {
+        var added = mutations[m].addedNodes;
+        for (var n = 0; n < added.length; n++) {
+          var node = added[n];
+          if (node.nodeType !== 1 || node.tagName !== 'SCRIPT') continue;
+          if (node.type !== 'text/plain') continue;
+          var category = node.getAttribute('data-consent');
+          if (category && choice[category]) activateScript(node);
         }
       }
     });
@@ -210,71 +209,76 @@
     return obs;
   }
 
-  function applica(scelta, iniziale) {
-    consentMode({ statistiche: scelta.statistiche, marketing: scelta.marketing, iniziale: iniziale });
-    var obs = (iniziale && (scelta.statistiche || scelta.marketing)) ? osservaEAttiva(scelta) : null;
-    quandoPronto(function () {
+  function apply(choice, initial) {
+    consentMode({ analytics: choice.analytics, marketing: choice.marketing, initial: initial });
+    var obs = (initial && (choice.analytics || choice.marketing)) ? observeAndActivate(choice) : null;
+    whenReady(function () {
       if (obs) obs.disconnect();
-      applicaAiNodi(scelta);
+      applyToNodes(choice);
     });
   }
 
-  /* ---------------------------------------------------------------- testi */
+  /* ---------------------------------------------------------------- texts
+   * The project speaks English; the banner speaks the visitor's language. These two dictionaries
+   * are content, not artefacts — an Italian site needs an Italian banner — and both stay.
+   */
 
   var T = {
-    it: {
-      titolo: 'Rispettiamo la tua scelta',
-      testo: 'Questo sito usa servizi di terze parti che possono raccogliere dati sulla tua navigazione. Puoi accettarli, rifiutarli o scegliere nel dettaglio. Senza il tuo consenso non viene caricato nulla.',
-      accetta: 'Accetta tutto',
-      rifiuta: 'Rifiuta tutto',
-      preferenze: 'Scegli nel dettaglio',
-      salva: 'Salva le preferenze',
-      necessari: 'Necessari',
-      necessariDesc: 'Servono a far funzionare il sito e la protezione anti-spam dei moduli. Non si possono disattivare.',
-      statistiche: 'Statistiche',
-      statisticheDesc: 'Ci dicono quante persone visitano il sito e quali pagine leggono, in forma aggregata.',
-      marketing: 'Contenuti esterni e marketing',
-      marketingDesc: 'Mappe, recensioni, video e link di affiliazione ospitati da altri siti, che ricevono il tuo indirizzo IP.',
-      sempreAttivi: 'Sempre attivi',
-      bloccato: 'Per vedere %s serve il tuo consenso ai contenuti esterni.',
-      mostraOra: 'Mostra',
-      sbloccaOra: 'Gestisci il consenso',
-      contenuto: 'questo contenuto',
-      chiudi: 'Chiudi',
-      dettaglio: 'Informativa privacy',
-      avvisoTesto: 'Questo sito usa statistiche e contenuti di terze parti. Puoi disattivarli quando vuoi.',
-      avvisoOk: 'Ho capito',
-      avvisoScegli: 'Preferenze'
-    },
     en: {
-      titolo: 'Your choice, your data',
-      testo: 'This site uses third-party services that may collect data about your visit. You can accept them, reject them, or choose in detail. Nothing loads without your consent.',
-      accetta: 'Accept all',
-      rifiuta: 'Reject all',
-      preferenze: 'Choose in detail',
-      salva: 'Save preferences',
-      necessari: 'Necessary',
-      necessariDesc: 'Required for the site to work and to protect forms from spam. These cannot be turned off.',
-      statistiche: 'Analytics',
-      statisticheDesc: 'Tell us how many people visit the site and which pages they read, in aggregate form.',
+      title: 'Your choice, your data',
+      text: 'This site uses third-party services that may collect data about your visit. You can accept them, reject them, or choose in detail. Nothing loads without your consent.',
+      acceptAll: 'Accept all',
+      rejectAll: 'Reject all',
+      chooseInDetail: 'Choose in detail',
+      savePreferences: 'Save preferences',
+      necessary: 'Necessary',
+      necessaryDesc: 'Required for the site to work and to protect forms from spam. These cannot be turned off.',
+      analytics: 'Analytics',
+      analyticsDesc: 'Tell us how many people visit the site and which pages they read, in aggregate form.',
       marketing: 'External content and marketing',
       marketingDesc: 'Maps, reviews, videos and affiliate links hosted elsewhere, which receive your IP address.',
-      sempreAttivi: 'Always on',
-      bloccato: 'Seeing %s requires your consent to external content.',
-      mostraOra: 'Show',
-      sbloccaOra: 'Manage consent',
-      contenuto: 'this content',
-      chiudi: 'Close',
-      dettaglio: 'Privacy policy',
-      avvisoTesto: 'This site uses analytics and third-party content. You can turn them off at any time.',
-      avvisoOk: 'Got it',
-      avvisoScegli: 'Preferences'
+      alwaysOn: 'Always on',
+      blocked: 'Seeing %s requires your consent to external content.',
+      showNow: 'Show',
+      manageConsent: 'Manage consent',
+      thisContent: 'this content',
+      close: 'Close',
+      policyLink: 'Privacy policy',
+      noticeText: 'This site uses analytics and third-party content. You can turn them off at any time.',
+      noticeOk: 'Got it',
+      noticePreferences: 'Preferences'
+    },
+    it: {
+      title: 'Rispettiamo la tua scelta',
+      text: 'Questo sito usa servizi di terze parti che possono raccogliere dati sulla tua navigazione. Puoi accettarli, rifiutarli o scegliere nel dettaglio. Senza il tuo consenso non viene caricato nulla.',
+      acceptAll: 'Accetta tutto',
+      rejectAll: 'Rifiuta tutto',
+      chooseInDetail: 'Scegli nel dettaglio',
+      savePreferences: 'Salva le preferenze',
+      necessary: 'Necessari',
+      necessaryDesc: 'Servono a far funzionare il sito e la protezione anti-spam dei moduli. Non si possono disattivare.',
+      analytics: 'Statistiche',
+      analyticsDesc: 'Ci dicono quante persone visitano il sito e quali pagine leggono, in forma aggregata.',
+      marketing: 'Contenuti esterni e marketing',
+      marketingDesc: 'Mappe, recensioni, video e link di affiliazione ospitati da altri siti, che ricevono il tuo indirizzo IP.',
+      alwaysOn: 'Sempre attivi',
+      blocked: 'Per vedere %s serve il tuo consenso ai contenuti esterni.',
+      showNow: 'Mostra',
+      manageConsent: 'Gestisci il consenso',
+      thisContent: 'questo contenuto',
+      close: 'Chiudi',
+      policyLink: 'Informativa privacy',
+      noticeText: 'Questo sito usa statistiche e contenuti di terze parti. Puoi disattivarli quando vuoi.',
+      noticeOk: 'Ho capito',
+      noticePreferences: 'Preferenze'
     }
   };
 
-  var lingua = (document.documentElement.getAttribute('lang') || 'it').slice(0, 2).toLowerCase();
-  var dizionario = T[lingua] || T.it;
-  function t(k) { return (cfg.testi && cfg.testi[k]) || dizionario[k]; }
+  // Fallback English, to match the language the kit is documented in. A page with no `lang` is a
+  // defect of that page — screen readers need it too — so this default should stay unreached.
+  var language = (document.documentElement.getAttribute('lang') || 'en').slice(0, 2).toLowerCase();
+  var dictionary = T[language] || T.en;
+  function t(k) { return (cfg.texts && cfg.texts[k]) || dictionary[k]; }
 
   function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, function (c) {
@@ -282,312 +286,314 @@
     });
   }
 
-  /* ---------------------------------------------------------------- interfaccia */
+  /* ---------------------------------------------------------------- interface */
 
-  var dialogo = null;
-  var focusPrecedente = null;
+  var dialog = null;
+  var previousFocus = null;
 
-  function bottone(testo, classe, azione) {
+  function button(label, className, action) {
     var b = document.createElement('button');
     b.type = 'button';
-    b.className = 'ck-btn ' + classe;
-    b.textContent = testo;
-    b.addEventListener('click', azione);
+    b.className = 'ck-btn ' + className;
+    b.textContent = label;
+    b.addEventListener('click', action);
     return b;
   }
 
-  function riga(chiave, attiva, bloccata) {
+  function row(key, on, locked) {
     var w = document.createElement('div');
-    w.className = 'ck-categoria';
-    var id = 'ck-cat-' + chiave;
+    w.className = 'ck-category';
+    var id = 'ck-cat-' + key;
     var input = document.createElement('input');
     input.type = 'checkbox';
     input.id = id;
-    input.checked = attiva;
-    input.disabled = !!bloccata;
-    input.setAttribute('data-categoria', chiave);
+    input.checked = on;
+    input.disabled = !!locked;
+    input.setAttribute('data-category', key);
     var lab = document.createElement('label');
     lab.setAttribute('for', id);
-    lab.innerHTML = '<strong>' + escapeHtml(t(chiave)) + '</strong>' +
-      (bloccata ? ' <em>(' + escapeHtml(t('sempreAttivi')) + ')</em>' : '') +
-      '<span>' + escapeHtml(t(chiave + 'Desc')) + '</span>';
+    lab.innerHTML = '<strong>' + escapeHtml(t(key)) + '</strong>' +
+      (locked ? ' <em>(' + escapeHtml(t('alwaysOn')) + ')</em>' : '') +
+      '<span>' + escapeHtml(t(key + 'Desc')) + '</span>';
     w.appendChild(input);
     w.appendChild(lab);
     return w;
   }
 
-  function chiudi() {
-    if (!dialogo) return;
-    dialogo.remove();
-    dialogo = null;
-    document.removeEventListener('keydown', tastiera, true);
-    if (focusPrecedente && focusPrecedente.focus) focusPrecedente.focus();
+  function close() {
+    if (!dialog) return;
+    dialog.remove();
+    dialog = null;
+    document.removeEventListener('keydown', keyboard, true);
+    if (previousFocus && previousFocus.focus) previousFocus.focus();
   }
 
-  // Focus trattenuto dentro il dialogo: senza, con Tab si esce su una pagina che non è utilizzabile
-  // finché la scelta non è fatta. Esc equivale a non decidere, quindi chiude solo il dettaglio.
-  function tastiera(e) {
-    if (!dialogo) return;
+  // Focus held inside the dialog: without it, Tab leaves for a page that cannot be used until the
+  // choice is made. Esc amounts to not deciding, so it closes nothing but the detail.
+  function keyboard(e) {
+    if (!dialog) return;
     if (e.key === 'Tab') {
-      var f = dialogo.querySelectorAll('button, input, a[href]');
+      var f = dialog.querySelectorAll('button, input, a[href]');
       if (!f.length) return;
-      var primo = f[0], ultimo = f[f.length - 1];
-      if (e.shiftKey && document.activeElement === primo) { e.preventDefault(); ultimo.focus(); }
-      else if (!e.shiftKey && document.activeElement === ultimo) { e.preventDefault(); primo.focus(); }
+      var first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
     }
   }
 
-  function decidi(statistiche, marketing) {
-    var scelta = { statistiche: statistiche, marketing: marketing, necessari: true };
-    var acceso = statistiche || marketing;
-    salva(scelta);
+  function decide(analytics, marketing) {
+    var choice = { analytics: analytics, marketing: marketing, necessary: true };
+    var somethingOn = analytics || marketing;
+    save(choice);
 
-    // Alcuni script cercano i propri contenitori mentre la pagina si costruisce, e attivati a
-    // pagina fatta restano muti. Per loro l'unico rimedio è ricostruirla: si ricarica, e al giro
-    // successivo l'osservatore li attiva al momento giusto. Solo se si è acceso qualcosa — dopo un
-    // rifiuto non c'è niente da far partire, e ricaricare sarebbe una punizione per aver detto no.
-    if (cfg.ricaricaDopoScelta && acceso) {
-      chiudi();
+    // Some scripts look for their own containers while the page is being built, and activated once
+    // it is finished they stay mute. For those the only remedy is to build it again: reload, and on
+    // the next pass the observer activates them at the right moment. Only if something was turned
+    // on — after a refusal there is nothing to start, and reloading would be a punishment for
+    // having said no.
+    if (cfg.reloadAfterChoice && somethingOn) {
+      close();
       location.reload();
       return;
     }
 
-    applica(scelta, false);
-    chiudi();
+    apply(choice, false);
+    close();
   }
 
-  function apri(soloDettaglio) {
-    chiudi();
-    focusPrecedente = document.activeElement;
-    var salvata = leggi() || { statistiche: false, marketing: false };
+  function open(detailOnly) {
+    close();
+    previousFocus = document.activeElement;
+    var stored = read() || { analytics: false, marketing: false };
 
-    // Posizione: 'modale' (default), 'basso', 'alto', 'angolo'.
-    // Solo la variante modale oscura la pagina e trattiene il focus. Le altre lasciano leggere e
-    // navigare: è lecito perché il blocco delle terze parti è tecnico e vale comunque, e un
-    // pannello che copre il contenuto finché non si decide somiglia troppo a un muro.
-    var posizione = cfg.posizione || 'modale';
-    var modale = posizione === 'modale';
+    // Position: 'modal' (default), 'bottom', 'top', 'corner'.
+    // Only the modal variant dims the page and holds the focus. The others leave it readable and
+    // navigable: legitimate, because the blocking of third parties is technical and holds anyway,
+    // and a panel covering the content until you decide looks too much like a wall.
+    var position = cfg.position || 'modal';
+    var modal = position === 'modal';
 
-    dialogo = document.createElement('div');
-    dialogo.className = 'ck-fondo ck-pos-' + posizione;
+    dialog = document.createElement('div');
+    dialog.className = 'ck-backdrop ck-pos-' + position;
     var box = document.createElement('div');
     box.className = 'ck-box';
     box.setAttribute('role', 'dialog');
-    box.setAttribute('aria-labelledby', 'ck-titolo');
-    // aria-modal mente al lettore di schermo se la pagina resta navigabile: si dichiara solo dove
-    // è vero, altrimenti chi usa uno screen reader crede di essere bloccato e non lo è.
-    if (modale) box.setAttribute('aria-modal', 'true');
+    box.setAttribute('aria-labelledby', 'ck-title');
+    // aria-modal lies to a screen reader if the page stays navigable: declare it only where it is
+    // true, or someone using one believes they are trapped when they are not.
+    if (modal) box.setAttribute('aria-modal', 'true');
 
     var h = document.createElement('h2');
-    h.id = 'ck-titolo';
-    h.textContent = t('titolo');
+    h.id = 'ck-title';
+    h.textContent = t('title');
     var p = document.createElement('p');
-    p.className = 'ck-testo';
-    p.textContent = t('testo');
+    p.className = 'ck-text';
+    p.textContent = t('text');
     box.appendChild(h);
     box.appendChild(p);
 
-    if (cfg.urlInformativa) {
+    if (cfg.policyUrl) {
       var a = document.createElement('a');
       a.className = 'ck-link';
-      a.href = cfg.urlInformativa;
-      a.textContent = t('dettaglio');
+      a.href = cfg.policyUrl;
+      a.textContent = t('policyLink');
       box.appendChild(a);
     }
 
-    var dettaglio = document.createElement('div');
-    dettaglio.className = 'ck-dettaglio';
-    dettaglio.appendChild(riga('necessari', true, true));
-    dettaglio.appendChild(riga('statistiche', salvata.statistiche, false));
-    dettaglio.appendChild(riga('marketing', salvata.marketing, false));
-    dettaglio.hidden = !soloDettaglio;
-    box.appendChild(dettaglio);
+    var details = document.createElement('div');
+    details.className = 'ck-details';
+    details.appendChild(row('necessary', true, true));
+    details.appendChild(row('analytics', stored.analytics, false));
+    details.appendChild(row('marketing', stored.marketing, false));
+    details.hidden = !detailOnly;
+    box.appendChild(details);
 
-    var azioni = document.createElement('div');
-    azioni.className = 'ck-azioni';
+    var actions = document.createElement('div');
+    actions.className = 'ck-actions';
 
-    // "Rifiuta" ha lo stesso peso visivo di "Accetta": un rifiuto meno visibile è il difetto più
-    // contestato dei banner fatti in casa, e rende il consenso non libero.
-    azioni.appendChild(bottone(t('accetta'), 'ck-btn-primario', function () { decidi(true, true); }));
-    azioni.appendChild(bottone(t('rifiuta'), 'ck-btn-primario', function () { decidi(false, false); }));
+    // "Reject" carries the same visual weight as "Accept": a less visible refusal is the most
+    // contested defect of home-made banners, and it makes the consent unfree.
+    actions.appendChild(button(t('acceptAll'), 'ck-btn-primary', function () { decide(true, true); }));
+    actions.appendChild(button(t('rejectAll'), 'ck-btn-primary', function () { decide(false, false); }));
 
-    if (!soloDettaglio) {
-      azioni.appendChild(bottone(t('preferenze'), 'ck-btn-terziario', function () {
-        dettaglio.hidden = false;
-        salvaBtn.hidden = false;
+    if (!detailOnly) {
+      actions.appendChild(button(t('chooseInDetail'), 'ck-btn-tertiary', function () {
+        details.hidden = false;
+        saveBtn.hidden = false;
         this.hidden = true;
       }));
     }
 
-    var salvaBtn = bottone(t('salva'), 'ck-btn-terziario', function () {
-      var s = dialogo.querySelector('[data-categoria="statistiche"]').checked;
-      var m = dialogo.querySelector('[data-categoria="marketing"]').checked;
-      decidi(s, m);
+    var saveBtn = button(t('savePreferences'), 'ck-btn-tertiary', function () {
+      var a = dialog.querySelector('[data-category="analytics"]').checked;
+      var m = dialog.querySelector('[data-category="marketing"]').checked;
+      decide(a, m);
     });
-    salvaBtn.hidden = !soloDettaglio;
-    azioni.appendChild(salvaBtn);
+    saveBtn.hidden = !detailOnly;
+    actions.appendChild(saveBtn);
 
-    box.appendChild(azioni);
-    dialogo.appendChild(box);
-    document.body.appendChild(dialogo);
+    box.appendChild(actions);
+    dialog.appendChild(box);
+    document.body.appendChild(dialog);
 
-    if (modale) {
-      // Focus trattenuto: con la pagina oscurata, uscire con Tab porterebbe su contenuti che non
-      // si possono usare finché la scelta non è fatta.
-      document.addEventListener('keydown', tastiera, true);
+    if (modal) {
+      // Focus held: with the page dimmed, tabbing out would land on content that cannot be used
+      // until the choice is made.
+      document.addEventListener('keydown', keyboard, true);
       box.querySelector('button').focus();
-    } else if (soloDettaglio) {
-      // Riaperto dal footer: chi ha premuto "Preferenze" si aspetta di arrivarci col focus.
-      // All'apertura automatica invece non si sposta, per non interrompere la lettura.
+    } else if (detailOnly) {
+      // Reopened from the footer: whoever pressed "Preferences" expects to arrive there with the
+      // focus. On an automatic opening it does not move, so as not to interrupt the reading.
       box.querySelector('button').focus();
     }
   }
 
-
-  /* ---------------------------------------------------------------- guardiano
-   * Il kit non può bloccare da solo una terza parte scritta nel markup: quando il browser incontra
-   * <script src="..."> la richiesta parte prima che qualunque JavaScript esista. Per questo il
-   * blocco va messo a mano, e per questo ci si dimentica.
+  /* ---------------------------------------------------------------- watchdog
+   * The kit cannot block a third party written in the markup by itself: when the browser meets
+   * <script src="..."> the request leaves before any JavaScript exists. That is why the blocking
+   * has to be done by hand, and why it gets forgotten.
    *
-   * Questo controllo non ripara niente — non potrebbe — ma guarda cosa la pagina ha davvero
-   * contattato e dice ad alta voce se qualcosa è passato senza marcatura. Trasforma un guasto
-   * silenzioso in uno rumoroso, che è l'unico modo in cui questi errori vengono trovati.
+   * This check repairs nothing — it could not — but it looks at what the page actually contacted
+   * and says out loud if something got through unmarked. It turns a silent failure into a noisy
+   * one, which is the only way these mistakes are ever found.
    *
-   * La lista è indicativa e invecchia: un dominio che non c'è non significa che sia innocuo.
+   * The list is indicative and it ages: a domain that is not on it is not thereby harmless.
    */
-  var TRACCIANTI = [
+  var TRACKERS = [
     'googletagmanager.com', 'google-analytics.com', 'doubleclick.net', 'googlesyndication.com',
     'connect.facebook.net', 'facebook.com/tr', 'hotjar.com', 'clarity.ms', 'matomo.cloud',
     'segment.io', 'segment.com', 'mixpanel.com', 'ads.linkedin.com', 'analytics.tiktok.com',
     'snap.licdn.com', 'bat.bing.com', 'cdn.amplitude.com', 'fullstory.com'
   ];
 
-  function guardiano() {
-    if (cfg.guardiano === false || typeof performance === 'undefined') return;
-    var sospetti = {};
-    var risorse = performance.getEntriesByType('resource');
-    for (var i = 0; i < risorse.length; i++) {
-      // Partita dopo che il kit ha attivato qualcosa: è una conseguenza del consenso, non una fuga.
-      if (risorse[i].startTime >= momentoAttivazione) continue;
-      var url = risorse[i].name;
-      for (var j = 0; j < TRACCIANTI.length; j++) {
-        if (url.indexOf(TRACCIANTI[j]) !== -1) sospetti[TRACCIANTI[j]] = true;
+  function watchdog() {
+    if (cfg.watchdog === false || typeof performance === 'undefined') return;
+    var suspects = {};
+    var resources = performance.getEntriesByType('resource');
+    for (var i = 0; i < resources.length; i++) {
+      // Started after the kit activated something: a consequence of consent, not a leak.
+      if (resources[i].startTime >= activationTime) continue;
+      var url = resources[i].name;
+      for (var j = 0; j < TRACKERS.length; j++) {
+        if (url.indexOf(TRACKERS[j]) !== -1) suspects[TRACKERS[j]] = true;
       }
     }
-    var elenco = Object.keys(sospetti);
-    if (!elenco.length) return;
+    var found = Object.keys(suspects);
+    if (!found.length) return;
     console.warn(
-      '[consent-kit] ' + elenco.join(', ') + (elenco.length > 1 ? ' sono stati caricati' : ' è stato caricato') +
-      ' senza passare dal consenso.\n' +
-      'Il blocco va messo nel markup, perché una richiesta scritta in pagina parte prima di qualsiasi script:\n' +
-      '  <script type="text/plain" data-consent="statistiche" data-src="..."></script>\n' +
-      'Per spegnere questo avviso: window.consensoConfig.guardiano = false'
+      '[consent-kit] ' + found.join(', ') + (found.length > 1 ? ' were loaded' : ' was loaded') +
+      ' without going through consent.\n' +
+      'The blocking belongs in the markup, because a request written into the page leaves before any script runs:\n' +
+      '  <script type="text/plain" data-consent="analytics" data-src="..."></script>\n' +
+      'To silence this warning: window.consentConfig.watchdog = false'
     );
   }
 
-  /* ---------------------------------------------------------------- avviso informativo
-   * Dove il consenso preventivo non è dovuto (fuori da UE, SEE e Regno Unito) il blocco non ha
-   * fondamento giuridico: si informa e si lascia la porta aperta a cambiare idea. Non è un banner
-   * di consenso e non finge di esserlo — chi vuole disattivare qualcosa apre le preferenze.
+  /* ---------------------------------------------------------------- informative notice
+   * Where prior consent is not owed (outside the EU, the EEA and the UK) the blocking has no legal
+   * basis: inform, and leave the door open to changing your mind. It is not a consent banner and
+   * does not pretend to be one — anyone who wants to switch something off opens the preferences.
    */
-  function avviso() {
-    var barra = document.createElement('div');
-    barra.className = 'ck-fondo ck-pos-basso ck-avviso';
+  function notice() {
+    var bar = document.createElement('div');
+    bar.className = 'ck-backdrop ck-pos-bottom ck-notice';
     var box = document.createElement('div');
     box.className = 'ck-box';
     box.setAttribute('role', 'region');
-    box.setAttribute('aria-label', t('avvisoTesto'));
+    box.setAttribute('aria-label', t('noticeText'));
 
     var p = document.createElement('p');
-    p.className = 'ck-testo';
+    p.className = 'ck-text';
     p.style.margin = '0';
-    p.textContent = t('avvisoTesto');
+    p.textContent = t('noticeText');
     box.appendChild(p);
 
-    var azioni = document.createElement('div');
-    azioni.className = 'ck-azioni';
-    azioni.appendChild(bottone(t('avvisoScegli'), 'ck-btn-terziario', function () {
-      barra.remove();
-      apri(true);
+    var actions = document.createElement('div');
+    actions.className = 'ck-actions';
+    actions.appendChild(button(t('noticePreferences'), 'ck-btn-tertiary', function () {
+      bar.remove();
+      open(true);
     }));
-    azioni.appendChild(bottone(t('avvisoOk'), 'ck-btn-primario', function () { barra.remove(); }));
-    box.appendChild(azioni);
-    barra.appendChild(box);
-    document.body.appendChild(barra);
+    actions.appendChild(button(t('noticeOk'), 'ck-btn-primary', function () { bar.remove(); }));
+    box.appendChild(actions);
+    bar.appendChild(box);
+    document.body.appendChild(bar);
   }
 
-  /* ---------------------------------------------------------------- avvio */
+  /* ---------------------------------------------------------------- start */
 
-  // Il regime si decide sul server, che è l'unico a sapere da dove arriva la richiesta. Finché non
-  // risponde tutto resta bloccato: se la chiamata fallisce, va in timeout o dà una risposta strana,
-  // si applica il regime rigoroso. Sbagliare mostrando un banner a chi non gli spettava è un
-  // fastidio; sbagliare al contrario è una violazione.
-  function decidiRegime(fn) {
+  // The regime is decided on the server, the only place that knows where the request comes from.
+  // Until it answers everything stays blocked: if the call fails, times out or answers oddly, the
+  // strict regime applies. Being wrong by showing a banner to someone who did not need one is an
+  // annoyance; being wrong the other way is a violation.
+  function decideRegime(fn) {
     if (!cfg.regimeUrl) return fn(true);
-    var fatto = false;
-    var chiudiConservativo = setTimeout(function () {
-      if (!fatto) { fatto = true; fn(true); }
+    var done = false;
+    var conservativeTimeout = setTimeout(function () {
+      if (!done) { done = true; fn(true); }
     }, cfg.regimeTimeout || 1500);
 
     fetch(cfg.regimeUrl, { credentials: 'omit' })
       .then(function (r) { return r.json(); })
       .then(function (d) {
-        if (fatto) return;
-        fatto = true;
-        clearTimeout(chiudiConservativo);
-        fn(d && d.consensoRichiesto !== false);
+        if (done) return;
+        done = true;
+        clearTimeout(conservativeTimeout);
+        fn(d && d.consentRequired !== false);
       })
       .catch(function () {
-        if (fatto) return;
-        fatto = true;
-        clearTimeout(chiudiConservativo);
+        if (done) return;
+        done = true;
+        clearTimeout(conservativeTimeout);
         fn(true);
       });
   }
 
-  // Se in pagina non c'è niente di marcato e il Consent Mode è spento, non c'è nulla da chiedere:
-  // il banner resta zitto. Serve a poter tenere il kit installato su un sito che oggi non ha terze
-  // parti — il giorno che se ne aggiunge una e la si marca, la richiesta compare da sé, senza
-  // ricordarsi di reinstallare niente. Un banner che chiede il permesso per nulla è peggio che
-  // inutile: dichiara un trattamento che non esiste e abitua a cliccare senza leggere.
-  function nienteDaGovernare() {
+  // If nothing on the page is marked and Consent Mode is off, there is nothing to ask about: the
+  // banner stays quiet. It is what lets the kit stay installed on a site that has no third parties
+  // today — the day one is added and marked, the request appears by itself, with nobody having to
+  // remember to reinstall anything. A banner that asks permission for nothing is worse than
+  // useless: it declares a processing that does not exist, and it teaches people to click without
+  // reading.
+  function nothingToGovern() {
     if (cfg.consentMode) return false;
-    return !document.querySelector('script[type="text/plain"][data-consent], [data-consent-src], [data-consent-segnaposto]');
+    return !document.querySelector('script[type="text/plain"][data-consent], [data-consent-src], [data-consent-placeholder]');
   }
 
-  var salvata = leggi();
-  if (salvata) {
-    applica(salvata, true);
+  var stored = read();
+  if (stored) {
+    apply(stored, true);
   } else {
-    // Prima di sapere il regime: tutto negato. È lo stato sicuro, e dura qualche decina di ms.
-    applica({ statistiche: false, marketing: false }, true);
-    decidiRegime(function (serveConsenso) {
-      if (serveConsenso) {
-        quandoPronto(function () { if (!nienteDaGovernare()) apri(false); });
+    // Before the regime is known: everything denied. It is the safe state, and it lasts a few tens
+    // of milliseconds.
+    apply({ analytics: false, marketing: false }, true);
+    decideRegime(function (consentRequired) {
+      if (consentRequired) {
+        whenReady(function () { if (!nothingToGovern()) open(false); });
       } else {
-        // Attivato senza consenso perché lì non è richiesto. Resta registrato come 'avviso' e non
-        // come consenso: chiamare "sì" una cosa che nessuno ha detto sarebbe una bugia scritta
-        // nel proprio localStorage.
-        var aperto = { statistiche: true, marketing: true, regime: 'avviso' };
-        salva(aperto);
-        applica(aperto, false);
-        quandoPronto(avviso);
+        // Activated without consent because none is required there. It stays recorded as 'notice'
+        // and not as a consent: calling "yes" something nobody said would be a lie written into
+        // the reader's own localStorage.
+        var opened = { analytics: true, marketing: true, regime: 'notice' };
+        save(opened);
+        apply(opened, false);
+        whenReady(notice);
       }
     });
   }
 
-  // Revoca: da collegare a un link "Preferenze cookie" nel footer. Senza una revoca facile il
-  // consenso non è valido, perché ritirarlo deve costare quanto darlo.
   if (typeof window.addEventListener === 'function') {
-    window.addEventListener('load', function () { setTimeout(guardiano, 2000); });
+    window.addEventListener('load', function () { setTimeout(watchdog, 2000); });
   }
 
-  window.consenso = {
-    versione: VERSIONE_KIT,
-    apri: function () { apri(true); },
-    stato: function () { return leggi(); },
-    revoca: function () {
-      try { localStorage.removeItem(CHIAVE); } catch (e) {}
+  // Revocation: to be wired to a "Cookie preferences" link in the footer. Without an easy
+  // revocation the consent is not valid, because withdrawing it must cost what giving it cost.
+  window.consent = {
+    version: KIT_VERSION,
+    open: function () { open(true); },
+    state: function () { return read(); },
+    revoke: function () {
+      try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
       location.reload();
     }
   };

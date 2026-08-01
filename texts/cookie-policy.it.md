@@ -1,6 +1,6 @@
 <!--
-  Modello di cookie policy — consent-kit 1.0.0
-  Da compilare: {{TITOLARE}}, {{EMAIL_CONTATTO}}, {{DOMINIO}}, {{DATA_AGGIORNAMENTO}}
+  Modello di cookie policy — consent-kit 2.0.0
+  Da compilare: {{CONTROLLER}}, {{CONTACT_EMAIL}}, {{DOMAIN}}, {{UPDATED}}
   e la tabella dei servizi, che va tenuta aderente a ciò che il sito carica DAVVERO.
 
   Va letto e validato da chi risponde per il titolare: è un modello, non un parere legale.
@@ -8,7 +8,7 @@
 
 # Cookie policy
 
-Ultimo aggiornamento: {{DATA_AGGIORNAMENTO}}
+Ultimo aggiornamento: {{UPDATED}}
 
 ## Cosa sono i cookie e le tecnologie simili
 
@@ -18,7 +18,7 @@ pagina tratta allo stesso modo, perché per chi visita il sito la sostanza non c
 
 Anche il solo caricamento di una risorsa ospitata altrove (una mappa, un widget di recensioni)
 comunica al fornitore l'indirizzo IP e il browser di chi sta leggendo, **anche se non viene salvato
-alcun cookie**. Per questo su {{DOMINIO}} quelle risorse non vengono caricate finché non c'è una
+alcun cookie**. Per questo su {{DOMAIN}} quelle risorse non vengono caricate finché non c'è una
 scelta.
 
 ## Come funziona il consenso su questo sito
@@ -49,14 +49,14 @@ Servono a capire quante persone visitano il sito e quali pagine leggono.
 Mappe, recensioni, video e link di affiliazione ospitati da altri siti, che ricevono l'indirizzo IP
 di chi visita.
 
-## I servizi usati da {{DOMINIO}}
+## I servizi usati da {{DOMAIN}}
 
 <!-- Tenere solo le righe che corrispondono al sito. La colonna "quando" è la parte che conta:
      dice se il servizio parte prima o dopo la scelta. -->
 
 | Servizio | Fornitore | Categoria | A cosa serve | Quando parte |
 |---|---|---|---|---|
-| {{SERVIZIO}} | {{FORNITORE}} | {{CATEGORIA}} | {{FINALITÀ}} | solo dopo il consenso |
+| {{SERVICE}} | {{PROVIDER}} | {{CATEGORY}} | {{PURPOSE}} | solo dopo il consenso |
 
 Per il dettaglio di come ciascun fornitore tratta i dati si rimanda alle rispettive informative,
 che questo sito non controlla.
@@ -69,7 +69,7 @@ funzionare correttamente.
 
 ## Titolare e contatti
 
-Titolare del trattamento: **{{TITOLARE}}**
-Per qualsiasi richiesta relativa ai dati personali: **{{EMAIL_CONTATTO}}**
+Titolare del trattamento: **{{CONTROLLER}}**
+Per qualsiasi richiesta relativa ai dati personali: **{{CONTACT_EMAIL}}**
 
-Per il quadro completo dei trattamenti si rimanda all'[informativa privacy]({{URL_INFORMATIVA}}).
+Per il quadro completo dei trattamenti si rimanda all'[informativa privacy]({{PRIVACY_URL}}).
