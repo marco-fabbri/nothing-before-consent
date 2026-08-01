@@ -20,6 +20,14 @@ on:
 jobs:
   announce:
     runs-on: ubuntu-latest
+    env:
+      # A fine-grained PAT limited to the repos in consumers.csv, with contents:write and
+      # pull-requests:write. The default GITHUB_TOKEN cannot write to another repository, which is
+      # the whole reason this secret exists.
+      #
+      # It is read at job level so the steps below can ASK whether it is there. Secrets are not
+      # available to an `if:` directly; an env var carrying one is.
+      GH_TOKEN: ${{ secrets.CONSUMERS_TOKEN }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -28,12 +36,23 @@ jobs:
           # shallow checkout that question silently becomes unanswerable.
           fetch-depth: 0
 
+      # Not configured is not the same as broken, and a workflow that cannot tell them apart
+      # teaches people to ignore its colour. Without the secret this cannot announce anything, and
+      # that is a state the repository is allowed to be in — the sites are updated by running
+      # tools/announce.sh by hand meanwhile. So it says so and goes green; the day the secret
+      # appears, it starts working with nothing else to change.
+      #
+      # The failure this replaces was worse than noise: every release left a red run titled after
+      # the MERGE COMMIT the tag points at, so it read as "the merge failed" rather than "the
+      # announcement is not configured".
+      - name: Not configured yet
+        if: env.GH_TOKEN == ''
+        run: |
+          echo "::notice title=Announcement skipped::CONSUMERS_TOKEN is not set, so no site can be \
+          reached from CI. Run tools/announce.sh by hand, or add the secret."
+
       - name: Announce
-        env:
-          # A fine-grained PAT limited to the repos in consumers.csv, with contents:write and
-          # pull-requests:write. The default GITHUB_TOKEN cannot write to another repository,
-          # which is the whole reason this secret exists.
-          GH_TOKEN: ${{ secrets.CONSUMERS_TOKEN }}
+        if: env.GH_TOKEN != ''
         run: |
           ARGS=""
           if [ -n "${{ inputs.version }}" ]; then ARGS="$ARGS --version ${{ inputs.version }}"; fi
