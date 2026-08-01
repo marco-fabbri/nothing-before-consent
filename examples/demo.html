@@ -5,6 +5,21 @@
 <title>consent-kit demo</title>
 <link rel="stylesheet" href="../src/consent.css">
 
+<!-- ?page=casper reproduces a Ghost/Casper site: a 62.5% root, and a page that is white or
+     #151719 depending on the visitor's setting. It is the combination that produced two defects
+     already — the panel shrinking by 37.5% in 1.2.1, and the panel being indistinguishable from
+     the page in 2.0.1 — so it is worth being able to reproduce on purpose. No palette is
+     redeclared here: the kit's own dark block still decides the panel, which means seeing the
+     dark case requires the device to actually be in dark mode. -->
+<script>
+  if (new URLSearchParams(location.search).get('page') === 'casper') {
+    document.write('<style>html{font-size:62.5%;background:#fff}' +
+      'body{color:#15171a}' +
+      '@media (prefers-color-scheme:dark){html{background:#151719}body{color:hsla(0,0%,100%,.75)}}' +
+      '</style>');
+  }
+</script>
+
 <!-- consent.js goes BEFORE everything: it must emit the Consent Mode signals before GA4 exists. -->
 <script>
   window.consentConfig = {
@@ -47,6 +62,10 @@ towards googletagmanager, trustindex or google.com/maps.</p>
 <p>The Trustindex script stays inert until there is consent.</p>
 
 <h2>Position</h2>
+<p>On a Ghost/Casper page: <a href="?pos=bottom&amp;page=casper">bottom, Casper</a> — a 62.5% root and
+the page colours of that theme, which is where the panel used to shrink and where it used to
+disappear into the article.</p>
+
 <p>Try the variants: <a href="?pos=modal">modal</a> · <a href="?pos=bottom">bottom</a> ·
 <a href="?pos=top">top</a> · <a href="?pos=corner">corner</a>
 (once you have chosen, use <em>Revoke and reload</em> to see the banner again).</p>
