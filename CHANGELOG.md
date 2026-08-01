@@ -3,6 +3,26 @@
 Ogni sito tiene una copia di `consent.js` con la versione scritta nella prima riga. Per sapere se
 un sito è indietro, apri quel file e confronta con questo elenco.
 
+## 1.2.1 — 1 agosto 2026
+
+- **misure in px invece che in rem**: il rem si misura sul font del sito ospite, e i temi della
+  famiglia Casper/Ghost impostano `html { font-size: 62.5% }` per poter scrivere `1.5rem` invece
+  di `15px`. Su quei siti ogni rem valeva 10px e il pannello rimpiccioliva del 37,5% — largo 520px
+  invece di 832, con 15px di padding invece di 24. Un banner deve avere la stessa taglia ovunque:
+  non è contenuto del sito, è un'interfaccia che ci si appoggia sopra.
+
+  **Per i siti già aggiornati non cambia niente**: dove il root è i canonici 16px i valori in px
+  sono esattamente quelli che il browser calcolava prima. Chi ha adottato il kit su andreamuccioli
+  e staybycity può ricopiare i due file senza aspettarsi differenze visive.
+
+  Le media query restano in `em` di proposito: lì l'unità si misura sul font di default del
+  browser e non sul root del sito, quindi erano già immuni, e in più seguono chi ha ingrandito i
+  caratteri nelle impostazioni.
+
+  Trovato installando il kit su marcofabbri.com, che è un Casper: il banner funzionava
+  perfettamente, era solo più piccolo del dovuto — il tipo di difetto che non rompe niente e per
+  questo resta lì per anni.
+
 ## 1.2.0 — 1 agosto 2026
 
 - **il banner tace se non c'è niente da governare**: nessun elemento marcato e Consent Mode spento
