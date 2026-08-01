@@ -3,6 +3,32 @@
 Ogni sito tiene una copia di `consent.js` con la versione scritta nella prima riga. Per sapere se
 un sito è indietro, apri quel file e confronta con questo elenco.
 
+## 1.2.0 — 1 agosto 2026
+
+- **il banner tace se non c'è niente da governare**: nessun elemento marcato e Consent Mode spento
+  significa nessuna richiesta di consenso. Serve a tenere il kit installato su un sito che oggi non
+  ha terze parti: il giorno che se ne aggiunge una e la si marca, la richiesta compare da sé.
+- **guardiano**: a pagina caricata controlla cosa è stato davvero contattato e avvisa in console se
+  un dominio di tracciamento noto è passato senza marcatura. Non blocca — non può, una richiesta
+  scritta nel markup parte prima di qualsiasi script — ma trasforma una dimenticanza silenziosa in
+  una rumorosa. Si spegne con `guardiano: false`.
+- **regime geografico**: `regimeUrl` interroga il server su chi è tenuto al consenso preventivo
+  (UE, SEE, Regno Unito) e chi no. Finché non risponde tutto resta bloccato, e ogni errore vale come
+  "consenso richiesto". Chi riceve l'avviso viene registrato come `regime: "avviso"`, mai come
+  consenso.
+- **segnaposto con due strade**: "Mostra" carica solo quell'elemento e solo per quella visita, senza
+  registrare nulla; "Gestisci il consenso" apre il pannello. Funziona anche per i widget che si
+  disegnano da soli, marcando il contenitore con `data-consent-segnaposto`.
+- **`ricaricaDopoScelta`**: per gli script che cercano i propri contenitori mentre la pagina si
+  costruisce e restano muti se attivati dopo. Solo quando si accende qualcosa, mai su un rifiuto.
+
+### Una nota che vale più delle righe qui sopra
+
+Il guardiano nasce da una giornata passata a inseguire guasti silenziosi: contatori fermi, 404
+congelate per una settimana, un widget di recensioni morto da ore. Nessuno di questi diceva niente,
+e li abbiamo trovati solo andandoli a cercare. Un avviso in console non ripara nulla, ma è la
+differenza fra accorgersene subito e accorgersene fra sei mesi.
+
 ## 1.1.0 — 1 agosto 2026
 
 - **posizione configurabile**: `modale` (come prima), `basso`, `alto`, `angolo`. Solo la variante
