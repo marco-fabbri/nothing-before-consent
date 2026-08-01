@@ -116,6 +116,19 @@ Then, for every line of the registry:
 A site that fails — repository renamed, path moved, token without access — does not stop the others:
 the errors are collected and the job fails at the end, noisily.
 
+**A major version is refused, and that is a rule with teeth rather than a note.** This mechanism
+knows how to carry two files, and a major release is by definition one where two files are not
+enough: the site's own configuration, markup and stylesheet have to move in the same commit. A pull
+request carrying only the files would break the site if merged, and it would look exactly like every
+other one. So when the major differs the script refuses that site, says why, and lets the run go
+red. A major is rare enough that doing it by hand is right; being quietly wrong about it once is
+not.
+
+The rule was found by looking at the very first release this mechanism would have announced. 2.0.0
+renames the whole public surface, and on the day it is tagged the automatic announcement would have
+opened three pull requests that break three sites. It only failed to happen because the credential
+did not exist yet — which is luck, and luck is not a design.
+
 ## What the pull request says
 
 The body is the point: a PR carrying two files without explaining why is a PR that gets merged

@@ -152,6 +152,21 @@ while IFS=, read -r SITE REPO SITE_PATH BRANCH || [ -n "$SITE" ]; do
       exit 0
     fi
 
+    # A MAJOR bump is not something this mechanism may deliver. It knows how to carry two files,
+    # and a major release is by definition one where two files are not enough: the site's own
+    # config, markup and stylesheet have to move in the same commit. A PR carrying only the files
+    # would be a PR that breaks the site if merged — and it would look like every other one.
+    #
+    # So it refuses, loudly, and the run goes red. A major happens rarely enough that doing it by
+    # hand is right; being quietly wrong about it once is not.
+    if [ "${VERSION%%.*}" != "${THEIRS%%.*}" ]; then
+      echo "   REFUSED: ${THEIRS:-unknown} → $VERSION crosses a major version."
+      echo "   Two files are not enough here: this site's own configuration, markup and stylesheet"
+      echo "   have to move with them, in the same commit. See the rename table in CHANGELOG.md"
+      echo "   and do this one by hand."
+      exit 1
+    fi
+
     # Has this copy been edited by hand? It is the question the tags exist for. Without this check
     # the PR would overwrite a local edit in silence — and a local edit is also what makes the
     # declared version false, and with it every future comparison.
