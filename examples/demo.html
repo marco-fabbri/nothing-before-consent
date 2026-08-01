@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>consent-kit demo</title>
+<link rel="stylesheet" href="../src/consent.css">
+
+<!-- consent.js goes BEFORE everything: it must emit the Consent Mode signals before GA4 exists. -->
+<script>
+  window.consentConfig = {
+    policyVersion: 1,
+    consentMode: true,
+    position: new URLSearchParams(location.search).get('pos') || 'modal',
+    policyUrl: '/privacy'
+  };
+</script>
+<script src="../src/consent.js"></script>
+
+<!-- The staybycity case: GA4, analytics category -->
+<script type="text/plain" data-consent="analytics"
+        data-src="https://www.googletagmanager.com/gtag/js?id=G-TE8ZVVY2Z5"></script>
+<script type="text/plain" data-consent="analytics">
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-TE8ZVVY2Z5');
+  document.getElementById('ga-result').textContent = 'GA4: inline script executed';
+</script>
+</head>
+<body style="font-family:system-ui;max-width:44rem;margin:2rem auto;padding:0 1rem">
+
+<h1>consent-kit demo</h1>
+<p>Open the <strong>Network</strong> tab and reload: before the choice there must be no request
+towards googletagmanager, trustindex or google.com/maps.</p>
+
+<h2>State</h2>
+<pre id="state" style="background:#f3f4f6;padding:1rem;border-radius:8px"></pre>
+<p id="ga-result">GA4: inline script not executed yet</p>
+
+<h2>Map (marketing)</h2>
+<iframe data-consent="marketing" data-consent-label="the studio's map"
+        data-consent-src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2846.38!2d11.36!3d44.48!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1"
+        width="100%" height="300" style="border:0" title="Map"></iframe>
+
+<h2>Reviews (marketing)</h2>
+<script type="text/plain" data-consent="marketing" data-src="https://cdn.trustindex.io/loader.js"></script>
+<p>The Trustindex script stays inert until there is consent.</p>
+
+<h2>Position</h2>
+<p>Try the variants: <a href="?pos=modal">modal</a> · <a href="?pos=bottom">bottom</a> ·
+<a href="?pos=top">top</a> · <a href="?pos=corner">corner</a>
+(once you have chosen, use <em>Revoke and reload</em> to see the banner again).</p>
+
+<h2>Watchdog</h2>
+<p>Below there is deliberately an <strong>unmarked</strong> tracking script: the kit cannot block it,
+but it must say so in the console within a few seconds of loading.</p>
+<script src="https://www.clarity.ms/tag/unmarked-example"></script>
+
+<h2>Controls</h2>
+<p>
+  <button onclick="window.consent.open()">Cookie preferences</button>
+  <button onclick="window.consent.revoke()">Revoke and reload</button>
+</p>
+
+<script>
+  function refreshState() {
+    var s = window.consent.state();
+    document.getElementById('state').textContent =
+      'stored choice: ' + (s ? JSON.stringify(s, null, 2) : 'none') +
+      '\ndataLayer: ' + JSON.stringify(window.dataLayer || []);
+  }
+  refreshState();
+  window.addEventListener('consent:changed', function (e) {
+    setTimeout(refreshState, 50);
+  });
+</script>
+</body>
+</html>

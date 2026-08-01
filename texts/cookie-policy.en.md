@@ -1,6 +1,6 @@
 <!--
-  Cookie policy template — consent-kit 1.0.0
-  Fill in: {{TITOLARE}}, {{EMAIL_CONTATTO}}, {{DOMINIO}}, {{DATA_AGGIORNAMENTO}}
+  Cookie policy template — consent-kit 2.0.0
+  Fill in: {{CONTROLLER}}, {{CONTACT_EMAIL}}, {{DOMAIN}}, {{UPDATED}}
   and the services table, which must match what the site actually loads.
 
   English version of cookie-policy.it.md. Keep the two in step: if you change one, change the other.
@@ -9,7 +9,7 @@
 
 # Cookie policy
 
-Last updated: {{DATA_AGGIORNAMENTO}}
+Last updated: {{UPDATED}}
 
 ## Cookies and similar technologies
 
@@ -18,7 +18,7 @@ technologies — `localStorage`, tracking pixels, requests to external servers �
 treats identically, because from a visitor's point of view the difference does not matter.
 
 Merely loading a resource hosted elsewhere (a map, a reviews widget) tells that provider your IP
-address and browser, **even when no cookie is stored**. That is why on {{DOMINIO}} those resources
+address and browser, **even when no cookie is stored**. That is why on {{DOMAIN}} those resources
 are not loaded until you have made a choice.
 
 ## How consent works on this site
@@ -47,14 +47,14 @@ Used to understand how many people visit the site and which pages they read.
 
 Maps, reviews, videos and affiliate links hosted by other companies, which receive your IP address.
 
-## Services used by {{DOMINIO}}
+## Services used by {{DOMAIN}}
 
 <!-- Keep only the rows that apply. The "when" column is the one that matters: it says whether a
      service runs before or after the choice. -->
 
 | Service | Provider | Category | Purpose | When it runs |
 |---|---|---|---|---|
-| {{SERVIZIO}} | {{FORNITORE}} | {{CATEGORIA}} | {{FINALITÀ}} | only after consent |
+| {{SERVICE}} | {{PROVIDER}} | {{CATEGORY}} | {{PURPOSE}} | only after consent |
 
 For details on how each provider processes data, please refer to their own privacy notices, which
 this site does not control.
@@ -67,7 +67,7 @@ properly.
 
 ## Controller and contact
 
-Data controller: **{{TITOLARE}}**
-For anything concerning personal data: **{{EMAIL_CONTATTO}}**
+Data controller: **{{CONTROLLER}}**
+For anything concerning personal data: **{{CONTACT_EMAIL}}**
 
-For the full picture, see the [privacy notice]({{URL_INFORMATIVA}}).
+For the full picture, see the [privacy notice]({{PRIVACY_URL}}).

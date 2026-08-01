@@ -1,6 +1,6 @@
 <!--
-  Modello di informativa privacy — consent-kit 1.0.0
-  Da compilare: {{TITOLARE}}, {{EMAIL_CONTATTO}}, {{DOMINIO}}, {{DATA_AGGIORNAMENTO}},
+  Modello di informativa privacy — consent-kit 2.0.0
+  Da compilare: {{CONTROLLER}}, {{CONTACT_EMAIL}}, {{DOMAIN}}, {{UPDATED}},
   l'elenco dei servizi e le sezioni che si applicano (il modulo di contatto c'è solo su alcuni siti).
 
   Sull'indirizzo fisico: l'art. 13 GDPR chiede "identità e dati di contatto" del titolare, e un
@@ -13,16 +13,16 @@
 
 # Informativa sul trattamento dei dati personali
 
-Ultimo aggiornamento: {{DATA_AGGIORNAMENTO}}
+Ultimo aggiornamento: {{UPDATED}}
 
-Questa informativa spiega quali dati raccoglie {{DOMINIO}}, perché, per quanto tempo e cosa può
+Questa informativa spiega quali dati raccoglie {{DOMAIN}}, perché, per quanto tempo e cosa può
 chiedere chi lo visita. È scritta per essere letta: dove una frase è vaga, è un difetto da
 correggere, non una cautela.
 
 ## Titolare del trattamento
 
-**{{TITOLARE}}**
-Contatto per qualsiasi questione relativa ai dati personali: **{{EMAIL_CONTATTO}}**
+**{{CONTROLLER}}**
+Contatto per qualsiasi questione relativa ai dati personali: **{{CONTACT_EMAIL}}**
 
 Non è stato nominato un responsabile della protezione dei dati (DPO): non ricorrono i casi in cui
 la nomina è obbligatoria.
@@ -58,7 +58,7 @@ altri dati particolari** se non nella misura necessaria a essere ricontattati.
 ### Dati raccolti da servizi di terze parti
 
 Il sito integra servizi ospitati da altri fornitori. Non vengono caricati finché non c'è una scelta
-esplicita, come descritto nella [cookie policy]({{URL_COOKIE_POLICY}}), dove sono elencati uno per
+esplicita, come descritto nella [cookie policy]({{COOKIE_POLICY_URL}}), dove sono elencati uno per
 uno.
 
 **Base giuridica**: consenso (art. 6.1.a GDPR), revocabile in qualsiasi momento senza che ciò
@@ -89,7 +89,7 @@ del trattamento, **portabilità**, e **opposizione** ai trattamenti fondati sul 
 Dove il trattamento si basa sul consenso, questo può essere **revocato** in qualsiasi momento — per
 i servizi di terze parti, dal link *Preferenze cookie* in fondo a ogni pagina.
 
-Le richieste si inviano a **{{EMAIL_CONTATTO}}** e ricevono risposta entro un mese.
+Le richieste si inviano a **{{CONTACT_EMAIL}}** e ricevono risposta entro un mese.
 
 Resta il diritto di proporre **reclamo al Garante per la protezione dei dati personali**
 (www.garanteprivacy.it) se si ritiene che il trattamento violi la normativa.
