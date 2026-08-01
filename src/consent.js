@@ -1,5 +1,5 @@
 /*!
- * consent-kit 1.2.0 — banner di consenso con blocco preventivo.
+ * consent-kit 1.2.1 — banner di consenso con blocco preventivo.
  * Copia versionata: se questo numero è più basso di quello nel CHANGELOG del kit, il sito è indietro.
  *
  * Il punto di questo file non è mostrare un banner: è impedire che le terze parti partano prima
@@ -19,7 +19,7 @@
 (function () {
   'use strict';
 
-  var VERSIONE_KIT = '1.2.0';
+  var VERSIONE_KIT = '1.2.1';
   var cfg = window.consensoConfig || {};
 
   // La versione della policy sta dentro la scelta salvata: quando cambiano i servizi la si alza e
