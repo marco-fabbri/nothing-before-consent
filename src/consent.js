@@ -1,5 +1,5 @@
 /*!
- * consent-kit 2.0.0 — consent banner with prior blocking.
+ * consent-kit 2.0.1 — consent banner with prior blocking.
  * Versioned copy: if this number is lower than the one in the kit's CHANGELOG, the site is behind.
  *
  * The point of this file is not to show a banner: it is to stop third parties from running before
@@ -19,7 +19,7 @@
 (function () {
   'use strict';
 
-  var KIT_VERSION = '2.0.0';
+  var KIT_VERSION = '2.0.1';
   var cfg = window.consentConfig || {};
 
   // The policy version lives inside the stored choice: when the services change you raise it and
