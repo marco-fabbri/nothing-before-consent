@@ -171,6 +171,7 @@ while IFS=, read -r SITE REPO SITE_PATH BRANCH || [ -n "$SITE" ]; do
     # the PR would overwrite a local edit in silence — and a local edit is also what makes the
     # declared version false, and with it every future comparison.
     EDITS=""
+    UNVERIFIABLE=""
     if [ -n "$THEIRS" ] && git rev-parse -q --verify "refs/tags/v$THEIRS" >/dev/null; then
       for F in consent.js consent.css; do
         if ! git show "v$THEIRS:src/$F" | diff -q - "$COPY/$F" >/dev/null 2>&1; then
@@ -184,6 +185,15 @@ while IFS=, read -r SITE REPO SITE_PATH BRANCH || [ -n "$SITE" ]; do
         echo "   WARNING: this copy has been edited by hand"
       fi
     else
+      # No tag for the version this copy declares, so the hand-edit question cannot be asked at
+      # all. That happens when a version string was edited by hand, when a copy was taken from an
+      # unreleased main, or when a release was renumbered after a site had already taken it.
+      #
+      # The check does not merely fail here — it does not run. Saying so ONLY in the log would put
+      # it in front of whoever watches a CI run and hide it from the person about to press Merge,
+      # which is the wrong way round: an absent check is invisible by nature, and the PR body is
+      # the one place it can be made visible.
+      UNVERIFIABLE=1
       echo "   version does not map to a tag: no byte-for-byte comparison"
     fi
 
@@ -193,6 +203,18 @@ while IFS=, read -r SITE REPO SITE_PATH BRANCH || [ -n "$SITE" ]; do
       echo
       changelog_between "$VERSION" "$THEIRS"
       echo
+      if [ -n "$UNVERIFIABLE" ]; then
+        echo "## ⚠ This copy could not be checked for hand edits"
+        echo
+        echo "It declares \`${THEIRS:-no readable version}\`, and there is no \`v${THEIRS}\` tag to"
+        echo "compare it against — so the usual byte-for-byte check did not fail, it did not run."
+        echo "A version string can end up orphaned by being edited by hand, by being taken from an"
+        echo "unreleased \`main\`, or by a release renumbered after this site had already taken it."
+        echo
+        echo "Nothing here says the copy is wrong. It says nobody looked. Worth a glance at the diff"
+        echo "below, and after this merge the site is comparable again like the others."
+        echo
+      fi
       if [ -n "$EDITS" ]; then
         echo "## ⚠ This copy had been edited by hand"
         echo
