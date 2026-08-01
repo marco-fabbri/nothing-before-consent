@@ -3,6 +3,26 @@
 Every site keeps a copy of `consent.js` with the version written on its first line. To find out
 whether a site is behind, open that file and compare it with this list.
 
+## 2.0.1 — 1 August 2026
+
+- **the panel has an outline.** Until now it was the same colour as the page it sat on — 1.00:1
+  against a white page, 1.11:1 against a dark one — with a shadow as its only separator, and a
+  shadow is black on black in the dark and too soft to read on a phone in the light. The new
+  `--ck-panel-border` defaults to a grey that clears 3:1 against both a white and a near-black page,
+  the threshold WCAG 1.4.11 asks for the boundary of a user interface component. **No palette
+  variable changed**, so no site has to touch its stylesheet.
+- **below 40em the banner runs edge to edge**, square corners, with the outline only on the side
+  facing the page. A floating card with faint edges reads as a block of text inside the article; a
+  bar that touches both sides reads as chrome, which is what it is.
+- **`env(safe-area-inset-bottom)`** on the bottom variant: on an iPhone the buttons were ending up
+  under Safari's floating toolbar.
+- `box-sizing: border-box` on the panel — the outline must not add to its width, and the host page
+  cannot be assumed to set it.
+
+Found on a phone, in dark mode, on marcofabbri.com: the banner was there, worked, and simply could
+not be told apart from the article behind it. Nothing was broken, which is why it had survived four
+releases.
+
 ## 2.0.0 — 1 August 2026
 
 **The kit is in English.** Code, comments, documentation, file and folder names, the configuration
