@@ -3,14 +3,16 @@
 Every site keeps a copy of `consent.js` with the version written on its first line. To find out
 whether a site is behind, open that file and compare it with this list.
 
-## 2.0.1 — 1 August 2026
+## 2.1.0 — 1 August 2026
 
 - **the panel has an outline.** Until now it was the same colour as the page it sat on — 1.00:1
   against a white page, 1.11:1 against a dark one — with a shadow as its only separator, and a
   shadow is black on black in the dark and too soft to read on a phone in the light. The new
   `--ck-panel-border` defaults to a grey that clears 3:1 against both a white and a near-black page,
   the threshold WCAG 1.4.11 asks for the boundary of a user interface component. **No palette
-  variable changed**, so no site has to touch its stylesheet.
+  variable changed**, so no site has to touch its stylesheet to be correct — but `--ck-panel-border`
+  is a new one, and a site that does not map it gets that neutral grey. Which is why this is a minor
+  and not a patch: the number is what tells a site with a palette of its own to go and look.
 - **below 40em the banner runs edge to edge**, square corners, with the outline only on the side
   facing the page. A floating card with faint edges reads as a block of text inside the article; a
   bar that touches both sides reads as chrome, which is what it is.
