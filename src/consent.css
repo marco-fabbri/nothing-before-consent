@@ -1,77 +1,78 @@
-/* consent-kit 1.2.1 — stile del banner.
+/* consent-kit 2.0.0 — the banner's style.
  *
- * Neutro di proposito: i colori passano da variabili CSS, così ogni sito lo accorda al proprio
- * aspetto senza toccare il file. Su un sito copiato pixel per pixel un banner che stona si nota
- * più di uno che manca.
+ * Deliberately neutral: the colours come from CSS variables, so every site tunes it to its own
+ * appearance without touching this file. On a site copied pixel by pixel, a banner that clashes is
+ * more noticeable than one that is missing.
  *
- * Da personalizzare per sito:
- *   :root { --ck-primario: #29a9e0; --ck-primario-testo: #fff; }
+ * To set per site:
+ *   :root { --ck-primary: #29a9e0; --ck-primary-text: #fff; }
  *
- * Misure in px e non in rem, di proposito: il rem si misura sul font del sito ospite, e ci sono
- * temi diffusi (tutta la famiglia Casper/Ghost) che impostano `html { font-size: 62.5% }` per
- * poter scrivere 1.5rem invece di 15px. Su quei siti ogni rem varrebbe 10px e il pannello
- * rimpicciolirebbe del 37,5% senza che nessuno l'abbia chiesto. Un banner deve avere la stessa
- * taglia ovunque: non e' contenuto del sito, e' un'interfaccia che ci si appoggia sopra.
+ * Sizes in px and not in rem, on purpose: rem is measured against the host site's font, and there
+ * are widespread themes (the whole Casper/Ghost family) that set `html { font-size: 62.5% }` so
+ * they can write 1.5rem instead of 15px. On those sites every rem would be 10px and the panel would
+ * shrink by 37.5% without anyone asking. A banner must be the same size everywhere: it is not the
+ * site's content, it is an interface resting on top of it.
  *
- * Le media query restano in `em` perche' li' l'unita' si misura sul font di default del browser,
- * non sul root del sito: sono gia' immuni, e in piu' seguono chi ha ingrandito i caratteri.
+ * The media queries stay in `em` because there the unit is measured against the browser's default
+ * font and not the site's root: they were already immune, and they follow anyone who has enlarged
+ * their type.
  */
 
 :root {
-  --ck-fondo: rgba(15, 23, 42, .55);
-  --ck-superficie: #fff;
-  --ck-testo: #1f2937;
-  --ck-testo-tenue: #4b5563;
-  --ck-bordo: #e5e7eb;
-  --ck-primario: #2563eb;
-  --ck-primario-testo: #fff;
-  --ck-raggio: 10px;
+  --ck-backdrop: rgba(15, 23, 42, .55);
+  --ck-surface: #fff;
+  --ck-text: #1f2937;
+  --ck-text-muted: #4b5563;
+  --ck-border: #e5e7eb;
+  --ck-primary: #2563eb;
+  --ck-primary-text: #fff;
+  --ck-radius: 10px;
 }
 
-.ck-fondo {
+.ck-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 2147483000; /* sopra i widget di terze parti, che stanno alti per conto loro */
+  z-index: 2147483000; /* above third-party widgets, which sit high of their own accord */
   display: flex;
   align-items: flex-end;
   justify-content: center;
   padding: 16px;
-  background: var(--ck-fondo);
+  background: var(--ck-backdrop);
 }
 
 @media (min-width: 40em) {
-  .ck-pos-modale { align-items: center; }
+  .ck-pos-modal { align-items: center; }
 }
 
-/* Le varianti non modali non oscurano e non intercettano i click: `inset` viene liberato dove
-   serve e il fondo diventa trasparente, così la pagina resta leggibile e utilizzabile. */
-.ck-pos-basso,
-.ck-pos-alto,
-.ck-pos-angolo {
+/* The non-modal variants neither dim nor swallow clicks: `inset` is released where it matters and
+   the backdrop turns transparent, so the page stays readable and usable. */
+.ck-pos-bottom,
+.ck-pos-top,
+.ck-pos-corner {
   background: none;
-  pointer-events: none; /* il contenitore lascia passare i click… */
+  pointer-events: none; /* the container lets clicks through… */
 }
 
-.ck-pos-basso .ck-box,
-.ck-pos-alto .ck-box,
-.ck-pos-angolo .ck-box {
-  pointer-events: auto; /* …il pannello no, altrimenti non sarebbe cliccabile */
+.ck-pos-bottom .ck-box,
+.ck-pos-top .ck-box,
+.ck-pos-corner .ck-box {
+  pointer-events: auto; /* …the panel does not, or it would not be clickable */
   box-shadow: 0 4px 24px rgba(0, 0, 0, .18);
 }
 
-.ck-pos-basso { inset: auto 0 0 0; align-items: flex-end; }
-.ck-pos-alto { inset: 0 0 auto 0; align-items: flex-start; }
+.ck-pos-bottom { inset: auto 0 0 0; align-items: flex-end; }
+.ck-pos-top { inset: 0 0 auto 0; align-items: flex-start; }
 
-.ck-pos-basso .ck-box,
-.ck-pos-alto .ck-box { max-width: 832px; }
+.ck-pos-bottom .ck-box,
+.ck-pos-top .ck-box { max-width: 832px; }
 
-.ck-pos-angolo { inset: auto 0 0 auto; justify-content: flex-end; align-items: flex-end; }
-.ck-pos-angolo .ck-box { max-width: 384px; }
+.ck-pos-corner { inset: auto 0 0 auto; justify-content: flex-end; align-items: flex-end; }
+.ck-pos-corner .ck-box { max-width: 384px; }
 
-/* Sotto i 40em l'angolo non ha senso: lo schermo è già stretto, il pannello diventa una barra. */
+/* Below 40em the corner makes no sense: the screen is narrow already, and the panel becomes a bar. */
 @media (max-width: 40em) {
-  .ck-pos-angolo { inset: auto 0 0 0; justify-content: center; }
-  .ck-pos-angolo .ck-box { max-width: none; }
+  .ck-pos-corner { inset: auto 0 0 0; justify-content: center; }
+  .ck-pos-corner .ck-box { max-width: none; }
 }
 
 .ck-box {
@@ -80,51 +81,51 @@
   max-height: calc(100vh - 32px);
   overflow-y: auto;
   padding: 24px;
-  border-radius: var(--ck-raggio);
-  background: var(--ck-superficie);
-  color: var(--ck-testo);
+  border-radius: var(--ck-radius);
+  background: var(--ck-surface);
+  color: var(--ck-text);
   font-size: 15px;
   line-height: 1.5;
   box-shadow: 0 10px 40px rgba(0, 0, 0, .25);
 }
 
 .ck-box h2 { margin: 0 0 8px; font-size: 18px; line-height: 1.3; }
-.ck-testo { margin: 0 0 12px; color: var(--ck-testo-tenue); }
-.ck-link { display: inline-block; margin-bottom: 12px; color: var(--ck-primario); }
+.ck-text { margin: 0 0 12px; color: var(--ck-text-muted); }
+.ck-link { display: inline-block; margin-bottom: 12px; color: var(--ck-primary); }
 
-.ck-dettaglio { margin: 8px 0 16px; border-top: 1px solid var(--ck-bordo); }
-.ck-categoria { display: flex; gap: 10px; padding: 13px 0; border-bottom: 1px solid var(--ck-bordo); }
-.ck-categoria input { margin-top: 4px; width: 17px; height: 17px; flex: none; }
-.ck-categoria label { display: block; cursor: pointer; }
-.ck-categoria input:disabled + label { cursor: default; }
-.ck-categoria label span { display: block; margin-top: 2px; color: var(--ck-testo-tenue); font-size: .9em; }
-.ck-categoria label em { color: var(--ck-testo-tenue); font-size: .85em; font-style: normal; }
+.ck-details { margin: 8px 0 16px; border-top: 1px solid var(--ck-border); }
+.ck-category { display: flex; gap: 10px; padding: 13px 0; border-bottom: 1px solid var(--ck-border); }
+.ck-category input { margin-top: 4px; width: 17px; height: 17px; flex: none; }
+.ck-category label { display: block; cursor: pointer; }
+.ck-category input:disabled + label { cursor: default; }
+.ck-category label span { display: block; margin-top: 2px; color: var(--ck-text-muted); font-size: .9em; }
+.ck-category label em { color: var(--ck-text-muted); font-size: .85em; font-style: normal; }
 
-.ck-azioni { display: flex; flex-wrap: wrap; gap: 8px; }
+.ck-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 
 .ck-btn {
   flex: 1 1 auto;
   min-width: 128px;
-  min-height: 44px; /* bersaglio comodo sul telefono, dove il banner si legge accovacciati */
+  min-height: 44px; /* a comfortable target on a phone, where the banner is read crouching */
   padding: 10px 16px;
   border: 1px solid transparent;
-  border-radius: calc(var(--ck-raggio) - 4px);
+  border-radius: calc(var(--ck-radius) - 4px);
   font: inherit;
   font-weight: 600;
   cursor: pointer;
 }
 
-/* Accetta e Rifiuta condividono lo stesso stile: se rifiutare costasse più fatica che accettare,
-   il consenso non sarebbe libero, ed è il rilievo più frequente sui banner fatti in casa. */
-.ck-btn-primario { background: var(--ck-primario); color: var(--ck-primario-testo); }
-.ck-btn-primario:hover { filter: brightness(1.08); }
-.ck-btn-terziario { background: transparent; color: var(--ck-testo); border-color: var(--ck-bordo); }
-.ck-btn-terziario:hover { background: #f9fafb; }
-.ck-btn:focus-visible { outline: 3px solid var(--ck-primario); outline-offset: 2px; }
+/* Accept and Reject share one style: if refusing cost more effort than accepting, the consent
+   would not be free, and it is the most frequent objection to home-made banners. */
+.ck-btn-primary { background: var(--ck-primary); color: var(--ck-primary-text); }
+.ck-btn-primary:hover { filter: brightness(1.08); }
+.ck-btn-tertiary { background: transparent; color: var(--ck-text); border-color: var(--ck-border); }
+.ck-btn-tertiary:hover { background: #f9fafb; }
+.ck-btn:focus-visible { outline: 3px solid var(--ck-primary); outline-offset: 2px; }
 
-/* Segnaposto al posto di un iframe bloccato: senza, resterebbe un buco muto nella pagina e
-   nessuno saprebbe che lì c'era una mappa. */
-.ck-segnaposto {
+/* A placeholder in place of a blocked iframe: without one there would be a mute hole in the page
+   and nobody would know a map had been there. */
+.ck-placeholder {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -132,28 +133,28 @@
   gap: 12px;
   min-height: 192px;
   padding: 24px;
-  border: 1px dashed var(--ck-bordo);
-  border-radius: var(--ck-raggio);
+  border: 1px dashed var(--ck-border);
+  border-radius: var(--ck-radius);
   background: #f9fafb;
-  color: var(--ck-testo-tenue);
+  color: var(--ck-text-muted);
   text-align: center;
 }
 
-.ck-segnaposto p { margin: 0; }
-.ck-segnaposto .ck-btn { flex: 0 0 auto; }
+.ck-placeholder p { margin: 0; }
+.ck-placeholder .ck-btn { flex: 0 0 auto; }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --ck-superficie: #111827;
-    --ck-testo: #f3f4f6;
-    --ck-testo-tenue: #9ca3af;
-    --ck-bordo: #374151;
+    --ck-surface: #111827;
+    --ck-text: #f3f4f6;
+    --ck-text-muted: #9ca3af;
+    --ck-border: #374151;
   }
-  .ck-btn-terziario:hover { background: #1f2937; }
-  .ck-segnaposto { background: #0b1220; }
+  .ck-btn-tertiary:hover { background: #1f2937; }
+  .ck-placeholder { background: #0b1220; }
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .ck-box { animation: ck-entra .18s ease-out; }
-  @keyframes ck-entra { from { transform: translateY(8px); opacity: 0; } }
+  .ck-box { animation: ck-enter .18s ease-out; }
+  @keyframes ck-enter { from { transform: translateY(8px); opacity: 0; } }
 }
