@@ -1,4 +1,4 @@
-/* consent-kit 2.0.0 — the banner's style.
+/* consent-kit 2.0.1 — the banner's style.
  *
  * Deliberately neutral: the colours come from CSS variables, so every site tunes it to its own
  * appearance without touching this file. On a site copied pixel by pixel, a banner that clashes is
@@ -24,6 +24,11 @@
   --ck-text: #1f2937;
   --ck-text-muted: #4b5563;
   --ck-border: #e5e7eb;
+  /* The panel's own outline, distinct from --ck-border, which separates the categories inside it.
+     A banner sits on a page whose colour it does not know, so the default has to hold against a
+     white page (4.8:1) and a near-black one (3.7:1), clearing the 3:1 that WCAG 1.4.11 asks for the
+     boundary of a user interface component. Override it per site if the page is neither. */
+  --ck-panel-border: #6b7280;
   --ck-primary: #2563eb;
   --ck-primary-text: #fff;
   --ck-radius: 10px;
@@ -57,11 +62,19 @@
 .ck-pos-top .ck-box,
 .ck-pos-corner .ck-box {
   pointer-events: auto; /* …the panel does not, or it would not be clickable */
+  /* The outline is what tells the visitor where the page ends and the banner begins. The shadow
+     below cannot do it: on a dark page it is black on black, and on a light one it is too soft to
+     read on a phone. Only the non-modal variants need it — the modal one dims the page instead. */
+  border: 1px solid var(--ck-panel-border);
   box-shadow: 0 4px 24px rgba(0, 0, 0, .18);
 }
 
 .ck-pos-bottom { inset: auto 0 0 0; align-items: flex-end; }
 .ck-pos-top { inset: 0 0 auto 0; align-items: flex-start; }
+
+/* On an iPhone the bottom of the panel ends up under Safari's floating toolbar. env() is 0 where
+   there is no inset, so nothing moves on a desktop. */
+.ck-pos-bottom .ck-box { padding-bottom: calc(24px + env(safe-area-inset-bottom)); }
 
 .ck-pos-bottom .ck-box,
 .ck-pos-top .ck-box { max-width: 832px; }
@@ -73,9 +86,26 @@
 @media (max-width: 40em) {
   .ck-pos-corner { inset: auto 0 0 0; justify-content: center; }
   .ck-pos-corner .ck-box { max-width: none; }
+
+  /* Edge to edge, square corners. A floating card with faint edges reads as a block of text inside
+     the article; a bar that touches both sides reads as chrome, which is what it is. */
+  .ck-pos-bottom,
+  .ck-pos-top,
+  .ck-pos-corner { padding: 0; }
+
+  .ck-pos-bottom .ck-box,
+  .ck-pos-top .ck-box,
+  .ck-pos-corner .ck-box { border-radius: 0; border-left: 0; border-right: 0; }
+
+  /* Only the edge facing the page carries the line: the opposite one is off-screen. */
+  .ck-pos-bottom .ck-box,
+  .ck-pos-corner .ck-box { border-bottom: 0; }
+  .ck-pos-top .ck-box { border-top: 0; }
 }
 
 .ck-box {
+  /* The outline must not add to the width, and the host page cannot be assumed to set this. */
+  box-sizing: border-box;
   width: 100%;
   max-width: 544px;
   max-height: calc(100vh - 32px);
