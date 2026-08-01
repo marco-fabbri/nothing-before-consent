@@ -209,3 +209,11 @@ The test is not "the banner appears", it is **"nothing runs before consent"**:
    `denied`
 
 Point 1 is the only one that tells this kit apart from a decorative banner.
+
+## Licence
+
+MIT — see [`LICENSE`](LICENSE). Use it, change it, ship it; keep the copyright notice.
+
+The licence covers the code. It does not cover the two things this repository cannot give you: the
+templates in `texts/` are a starting point to be read and validated by whoever answers for the data
+controller, and nothing here is legal advice.
