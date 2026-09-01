@@ -1,0 +1,35 @@
+name: Version coherence
+
+# The version is written by hand in four places. This says whether they agree.
+#
+# It replaces a check that lived inside the announcement workflow and ran only when a credential was
+# present — which meant it never ran at all. A check that does not run is worse than no check,
+# because the green tick says it did.
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+
+jobs:
+  coherence:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # On a branch or a pull request the four numbers only have to agree with each other: during a
+      # release the tree is legitimately ahead of the newest tag. On a tag they must also agree with
+      # the tag, because that is the moment the number becomes an answer given to strangers.
+      - name: The four numbers agree
+        run: |
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            tools/check-version.sh --tag "${{ github.ref_name }}"
+          else
+            tools/check-version.sh
+          fi
+
+      # Three seconds, and it catches the one class of mistake that would break every site holding a
+      # copy: a file that does not parse. There is no build step to catch it later.
+      - name: consent.js parses
+        run: node --check src/consent.js
