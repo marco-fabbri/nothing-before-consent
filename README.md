@@ -268,6 +268,12 @@ curl -sf https://raw.githubusercontent.com/marco-fabbri/nothing-before-consent/v
 A `404` means the copy declares a version that was never released — edited by hand, taken from an
 unreleased `main`, or renumbered afterwards. That is a cleaner answer than a diff nobody can compute.
 
+**Match the number, not the name.** Line 1 reads `<name> X.Y.Z`, and the name on it was `consent-kit`
+until 2.2.0 renamed the project — so every copy taken before then, which today is every copy in
+existence, carries the old one. A check that looks for the current name finds nothing and concludes
+the file is unreadable rather than old, which is the wrong answer given confidently. Take the version
+with something like `[0-9]+\.[0-9]+\.[0-9]+` and ignore what precedes it.
+
 If the two files differ, the edits belong somewhere else: colours in the `--ck-*` variables of the
 site's own stylesheet, behaviour in `window.consentConfig`, wording in `texts`. An edited copy can no
 longer be compared with its source, which is the only way to tell whether it is behind.
