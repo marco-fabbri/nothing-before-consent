@@ -76,6 +76,20 @@ That box is the whole argument in one picture: the map is not hidden, it was nev
 does not know you are reading this page, and the visitor is told so and given the way back in the
 same place rather than being sent to look for a banner.
 
+**A widget that draws itself** (reviews, feeds, a booking calendar) has no element to replace: there
+is an empty container and a script that fills it. Mark the container, and name the scripts that feed
+it by `id`:
+
+```html
+<div data-consent="marketing" data-consent-placeholder
+     data-consent-label="the reviews" data-consent-activates="reviews-loader"></div>
+<script type="text/plain" id="reviews-loader" data-consent="marketing"
+        data-src="https://example.com/widget.js"></script>
+```
+
+The placeholder appears inside the container, and its "Show" button activates the listed scripts
+for this visit only. The demo has one.
+
 ## Installation
 
 1. copy `src/consent.js` and `src/consent.css` into the site
@@ -149,8 +163,9 @@ to be decided rather than filled:
 
 - **the services table** in the cookie policy. One row per third party the site actually loads, and
   the "when it runs" column is the one that carries the weight — it is where the page stops
-  describing an intention and starts describing this site. A table that does not match what the
-  Network tab shows is worse than no table.
+  describing an intention and starts describing this site. `{{WHEN}}` takes two values and no
+  other: "always" for a `necessary` service, "only after consent" for the rest. A table that does
+  not match what the Network tab shows is worse than no table.
 - **the sections that do not apply.** The privacy notice assumes a contact form; a site without one
   deletes that section rather than leaving a description of data it never receives.
 - **the supervisory authority.** The draft names the Italian Garante, because that is where it was
@@ -162,8 +177,8 @@ monitored email address satisfies that. **A home address is not required.**
 
 Keep the two language versions in step: if you change one, change the other. The version in each
 file's header is the release the text was last written for, not the release you are on — a template
-still saying 2.0.0 means the words did not need to change, which is why `texts/` is left out of the
-coherence check.
+whose header is behind the code means the words did not need to change, which is why `texts/` is
+left out of the coherence check.
 
 And the part this repository cannot do for you, which is why it is said twice: these are a starting
 point, not legal advice, and they have to be read and validated by whoever answers for the data
@@ -178,7 +193,7 @@ the tedious half.
 | `consentMode` | `false` | emits the Google signals with everything `denied` before anything loads |
 | `policyUrl` | — | the link shown in the banner |
 | `position` | `modal` | `modal`, `bottom`, `top`, `corner` |
-| `storageKey` | `nothing-before-consent` | the name of the `localStorage` entry |
+| `storageKey` | `nothing-before-consent` | the name of the `localStorage` entry. Storage is per origin: a site reachable as both `example.com` and `www.example.com` asks twice and keeps two answers, so redirect one to the other |
 | `texts` | — | overrides individual strings |
 | `watchdog` | `true` | warns in the console if a known tracker got through unmarked |
 | `reloadAfterChoice` | `false` | reloads when something is switched on, for scripts that stay mute otherwise |
@@ -260,18 +275,23 @@ something nobody said would be a lie written into the reader's own browser.
 
 ```js
 window.consent.open()     // reopens the choice, with the detail already unfolded
-window.consent.state()    // { version, when, analytics, marketing, regime } or null
+window.consent.state()    // { version, when, necessary, analytics, marketing, regime } or null
 window.consent.revoke()   // clears the choice and reloads
+window.consent.version    // the kit version live on this page, e.g. '2.2.1'
 window.addEventListener('consent:changed', e => { /* e.detail */ });
 ```
+
+In `state()`, `necessary` is always `true` and `regime` is `"consent"` where the visitor was asked
+and `"notice"` where they were only informed — see [the geographic regime](#the-geographic-regime).
 
 The event is for whoever needs to do more than a `<script>`: starting a widget only after consent,
 say, while keeping an existing deferred load.
 
 ## How a site finds out it is behind
 
-**To know which version a site is running, open its `consent.js` and read the first line.** That is
-the whole mechanism, and everything below is a way of automating that one act.
+**To know which version a site is running, open its `consent.js` and read the header.** The
+version is in the comment at the top, on the second line (the first is the `/*!` that opens it).
+That is the whole mechanism, and everything below is a way of automating that one act.
 
 The kit is **not a dependency**, deliberately: every site keeps its own copy, with the version
 written at the top of the file. A site can change hands, and a copied file owes this repository
@@ -311,11 +331,16 @@ curl -sf https://raw.githubusercontent.com/marco-fabbri/nothing-before-consent/v
 A `404` means the copy declares a version that was never released — edited by hand, taken from an
 unreleased `main`, or renumbered afterwards. That is a cleaner answer than a diff nobody can compute.
 
-**Match the number, not the name.** Line 1 reads `<name> X.Y.Z`, and the name on it was `consent-kit`
-until 2.2.0 renamed the project — so every copy taken before then, which today is every copy in
-existence, carries the old one. A check that looks for the current name finds nothing and concludes
-the file is unreadable rather than old, which is the wrong answer given confidently. Take the version
-with something like `[0-9]+\.[0-9]+\.[0-9]+` and ignore what precedes it.
+**Match the number, not the name, and not the line.** The header reads `<name> X.Y.Z`, and the name
+on it was `consent-kit` until 2.2.0 renamed the project — so every copy taken before then carries the
+old one. A check that looks for the current name finds nothing and concludes the file is unreadable
+rather than old, which is the wrong answer given confidently. The same goes for a check that reads
+exactly line 1, which is `/*!` in every release so far. Take the first version-shaped thing in the
+file and ignore what surrounds it:
+
+```sh
+grep -m1 -oE '[0-9]+\.[0-9]+\.[0-9]+' path/to/your/consent.js
+```
 
 If the two files differ, the edits belong somewhere else: colours in the `--ck-*` variables of the
 site's own stylesheet, behaviour in `window.consentConfig`, wording in `texts`. An edited copy can no
@@ -361,8 +386,9 @@ without a log, in order to prove you collected little. The remedy worse than the
 What you demonstrate, and what suffices, is **the mechanism**:
 
 1. **what that person chose**: it is in their browser, with the date and the policy version — the
-   `{ version, when, analytics, marketing }` the kit stores. If they dispute it, that datum is on
-   their device, where it belongs;
+   `{ version, when, necessary, analytics, marketing, regime }` the kit stores, where `regime` says
+   whether it was a consent or only a notice. If they dispute it, that datum is on their device,
+   where it belongs;
 2. **what the banner was asking at that moment**: it is in git — **your** git, the repository of the
    site, not this one. The history of your copy of `consent.js`, of your texts and of your
    `policyVersion` records which categories existed, how they were described and since when. It is

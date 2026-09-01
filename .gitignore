@@ -1,5 +1,4 @@
 .DS_Store
-node_modules/
 
 # Per-machine agent settings: the one file an agent working in this repo writes without being asked.
 # It is per-machine by nature, so it does not belong to anybody else who clones this.

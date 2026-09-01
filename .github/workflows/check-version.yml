@@ -12,6 +12,11 @@ on:
     tags: ['v*']
   pull_request:
 
+# Reading the tree is all this needs. Said explicitly, because on a public repository the default
+# is wider than that.
+permissions:
+  contents: read
+
 jobs:
   coherence:
     runs-on: ubuntu-latest

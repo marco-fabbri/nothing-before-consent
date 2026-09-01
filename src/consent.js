@@ -1,5 +1,5 @@
 /*!
- * nothing-before-consent 2.2.0 — consent banner with prior blocking.
+ * nothing-before-consent 2.2.1 — consent banner with prior blocking.
  * https://github.com/marco-fabbri/nothing-before-consent
  *
  * Versioned copy. This number is the whole of what this site knows about which version it runs, so
@@ -23,7 +23,7 @@
 (function () {
   'use strict';
 
-  var KIT_VERSION = '2.2.0';
+  var KIT_VERSION = '2.2.1';
   var cfg = window.consentConfig || {};
 
   // The policy version lives inside the stored choice: when the services change you raise it and
@@ -49,8 +49,15 @@
       if (raw === null && LEGACY_STORAGE_KEY) {
         raw = localStorage.getItem(LEGACY_STORAGE_KEY);
         if (raw !== null) {
-          localStorage.setItem(STORAGE_KEY, raw);
-          localStorage.removeItem(LEGACY_STORAGE_KEY);
+          // The carry-over is a write, and a write can fail where a read did not (quota, or a
+          // browser that permits reading and refuses writing). It gets its own try so that a
+          // failed carry-over is harmless: the choice is still returned from the old key, and the
+          // move is attempted again next time. Before this, the failure unwound the whole read and
+          // a visitor who had answered was asked again.
+          try {
+            localStorage.setItem(STORAGE_KEY, raw);
+            localStorage.removeItem(LEGACY_STORAGE_KEY);
+          } catch (e) { /* see above */ }
         }
       }
       var stored = JSON.parse(raw || 'null');
@@ -67,6 +74,8 @@
     }
   }
 
+  // Returns whether the choice was actually recorded. The caller that reloads the page needs to
+  // know: a reload on a choice that was not stored brings the banner straight back.
   function save(choice) {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
@@ -79,9 +88,11 @@
         marketing: !!choice.marketing,
         regime: choice.regime || 'consent'
       }));
+      return true;
     } catch (e) {
       /* If it cannot be stored, the choice holds for this page and will be asked again: better to
          ask twice than to assume a consent that was never recorded. */
+      return false;
     }
   }
 
@@ -119,16 +130,18 @@
     }
     var src = node.getAttribute('data-src');
     if (activationTime === Infinity) activationTime = performance.now();
-    if (src) { s.src = src; activatedByKit.push(src); } else { s.text = node.textContent; }
+    // The resolved address, not the attribute as written: the watchdog compares it with what the
+    // browser reports having fetched, and that is always absolute.
+    if (src) { s.src = src; activatedByKit.push(s.src); } else { s.text = node.textContent; }
     node.parentNode.replaceChild(s, node);
   }
 
   function activateIframe(node) {
     if (activationTime === Infinity) activationTime = performance.now();
-    activatedByKit.push(node.getAttribute('data-consent-src') || '');
     var placeholder = node.previousElementSibling;
     if (placeholder && placeholder.classList.contains('ck-placeholder')) placeholder.remove();
     node.src = node.getAttribute('data-consent-src');
+    activatedByKit.push(node.src);
     node.removeAttribute('data-consent-src');
     node.style.display = '';
   }
@@ -242,7 +255,11 @@
 
   function apply(choice, initial) {
     consentMode({ analytics: choice.analytics, marketing: choice.marketing, initial: initial });
-    var obs = (initial && (choice.analytics || choice.marketing)) ? observeAndActivate(choice) : null;
+    // On every initial pass, whatever was chosen: `necessary` is always on, and a necessary widget
+    // that draws itself needs the same parse-time activation whether the visitor accepted the rest
+    // or refused it. Gating this on the two consented categories, as it used to be, gave a
+    // refusing visitor a necessary widget that initialised at DOMContentLoaded and drew nothing.
+    var obs = initial ? observeAndActivate(choice) : null;
     whenReady(function () {
       if (obs) obs.disconnect();
       applyToNodes(choice);
@@ -321,6 +338,7 @@
 
   var dialog = null;
   var previousFocus = null;
+  var focusFallback = null;
 
   function button(label, className, action) {
     var b = document.createElement('button');
@@ -356,7 +374,15 @@
     dialog.remove();
     dialog = null;
     document.removeEventListener('keydown', keyboard, true);
-    if (previousFocus && previousFocus.focus) previousFocus.focus();
+    // The element that had the focus may be gone by now: the panel opened from a placeholder's
+    // "Manage consent" button, and saving removed the placeholder. Focusing a detached node throws
+    // nothing and moves nothing, which leaves the visitor on <body>, at the top of the page. So the
+    // focus goes back to what the placeholder stood for — the content just unblocked — and the
+    // keyboard resumes from where the visitor was.
+    var target = previousFocus && document.contains(previousFocus) ? previousFocus : focusFallback;
+    if (!target || !target.focus) return;
+    if (target !== previousFocus && !target.hasAttribute('tabindex')) target.setAttribute('tabindex', '-1');
+    target.focus();
   }
 
   // Focus held inside the dialog: without it, Tab leaves for a page that cannot be used until the
@@ -396,14 +422,16 @@
   function decide(analytics, marketing) {
     var choice = { analytics: analytics, marketing: marketing, necessary: true };
     var somethingOn = analytics || marketing;
-    save(choice);
+    var recorded = save(choice);
 
     // Some scripts look for their own containers while the page is being built, and activated once
     // it is finished they stay mute. For those the only remedy is to build it again: reload, and on
     // the next pass the observer activates them at the right moment. Only if something was turned
     // on — after a refusal there is nothing to start, and reloading would be a punishment for
-    // having said no.
-    if (cfg.reloadAfterChoice && somethingOn) {
+    // having said no. And only if the choice was actually stored: where localStorage is refused,
+    // a reload finds no choice and puts the banner back, and every click costs a page load that
+    // changes nothing. Then the choice holds for this page, as it does without the reload.
+    if (cfg.reloadAfterChoice && somethingOn && recorded) {
       close();
       location.reload();
       return;
@@ -416,6 +444,11 @@
   function open(detailOnly) {
     close();
     previousFocus = document.activeElement;
+    // Opened from a placeholder: remember what it stands for, in case it is gone by the time the
+    // panel closes. Before an iframe it is the iframe; inside a container it is the container.
+    var ph = previousFocus && previousFocus.closest ? previousFocus.closest('.ck-placeholder') : null;
+    var next = ph && ph.nextElementSibling;
+    focusFallback = ph ? (next && next.tagName === 'IFRAME' ? next : ph.parentElement) : null;
     var stored = read() || { necessary: true, analytics: false, marketing: false };
 
     // Position: 'modal' (default), 'bottom', 'top', 'corner'.
@@ -520,12 +553,22 @@
 
   function watchdog() {
     if (cfg.watchdog === false || typeof performance === 'undefined') return;
+    // A tracker that started after the kit activated something may be a consequence of consent:
+    // GA4, once activated, calls google-analytics.com by itself. That exemption holds only where
+    // something was consented to. With no answer yet, or a refusal, nothing the kit activated can
+    // legitimately call a tracker, so everything the page contacted is looked at, whenever it
+    // started. Before this the exemption was unconditional, and a visitor who had answered once
+    // silenced the check for good: the observer activates the first marked script during parsing,
+    // so every unmarked tracker further down the page counted as "after activation".
+    var current = read();
+    var consented = !!(current && (current.analytics || current.marketing));
     var suspects = {};
     var resources = performance.getEntriesByType('resource');
     for (var i = 0; i < resources.length; i++) {
-      // Started after the kit activated something: a consequence of consent, not a leak.
-      if (resources[i].startTime >= activationTime) continue;
       var url = resources[i].name;
+      // What the kit activated itself is marked by definition, whatever its address.
+      if (activatedByKit.indexOf(url) !== -1) continue;
+      if (consented && resources[i].startTime >= activationTime) continue;
       for (var j = 0; j < TRACKERS.length; j++) {
         if (url.indexOf(TRACKERS[j]) !== -1) suspects[TRACKERS[j]] = true;
       }
@@ -634,8 +677,14 @@
         // the reader's own localStorage.
         var opened = { necessary: true, analytics: true, marketing: true, regime: 'notice' };
         save(opened);
-        apply(opened, false);
-        whenReady(notice);
+        whenReady(function () {
+          // The same guard as the banner: a notice about third-party content on a page that has
+          // none is a statement about processing that does not exist. Asked before apply(),
+          // because activating a marked script is what makes it stop looking marked.
+          var something = !nothingToGovern();
+          apply(opened, false);
+          if (something) notice();
+        });
       }
     });
   }

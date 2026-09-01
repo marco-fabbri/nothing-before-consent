@@ -53,20 +53,40 @@
 
 <h1>nothing-before-consent</h1>
 <p>Open the <strong>Network</strong> tab and reload: before the choice there must be no request
-towards googletagmanager, trustindex or google.com/maps.</p>
+towards googletagmanager, google.com/maps or youtube-nocookie.com.</p>
 
 <h2>State</h2>
 <pre id="state" style="background:#f3f4f6;padding:1rem;border-radius:8px"></pre>
 <p id="ga-result">GA4: inline script not executed yet</p>
 
 <h2>Map (marketing)</h2>
+<!-- A place search rather than a hand-built `pb=` string: the latter is what the Maps UI hands
+     you, and one copied from the wrong place shows "Google Maps Platform rejected your request"
+     in the very box the demo is supposed to fill. -->
 <iframe data-consent="marketing" data-consent-label="an embedded map"
-        data-consent-src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2846.38!2d11.36!3d44.48!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1"
+        data-consent-src="https://www.google.com/maps/embed?origin=mfe&amp;pb=!1m2!2m1!1sBologna"
         width="100%" height="300" style="border:0" title="Map"></iframe>
 
-<h2>Reviews (marketing)</h2>
-<script type="text/plain" data-consent="marketing" data-src="https://cdn.trustindex.io/loader.js"></script>
-<p>The Trustindex script stays inert until there is consent.</p>
+<h2>Video (marketing)</h2>
+<iframe data-consent="marketing" data-consent-label="an embedded video"
+        data-consent-src="https://www.youtube-nocookie.com/embed/aqz-KE-bpKQ"
+        width="100%" height="300" style="border:0" title="Video"
+        allow="accelerometer; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<p><code>youtube-nocookie.com</code> is the less talkative of YouTube's two hosts, and it is still a
+third party: nothing is fetched from it until there is consent, not even the thumbnail.</p>
+
+<h2>A widget that draws itself (marketing)</h2>
+<!-- Reviews, feeds, booking calendars: there is no element to replace, only an empty container and
+     a script that fills it. The placeholder goes on the container, and "Show" activates the scripts
+     listed by id in data-consent-activates. The script here is inline and local, so that the demo
+     contacts nobody to make the point; a real one would carry a data-src. -->
+<div id="widget" data-consent="marketing" data-consent-placeholder
+     data-consent-label="a widget that draws itself" data-consent-activates="widget-script"
+     style="min-height:6rem;border:1px dashed #9ca3af;border-radius:8px;padding:1rem"></div>
+<script type="text/plain" id="widget-script" data-consent="marketing">
+  document.getElementById('widget').textContent =
+    'Drawn by the widget script at ' + new Date().toLocaleTimeString() + '.';
+</script>
 
 <h2>Position</h2>
 <p>On a Ghost/Casper page: <a href="?pos=bottom&amp;page=casper">bottom, Casper</a> — a 62.5% root and
