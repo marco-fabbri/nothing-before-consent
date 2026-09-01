@@ -1,4 +1,6 @@
-/* consent-kit 2.1.0 — the banner's style.
+/* nothing-before-consent 2.2.0 — the banner's style.
+ *
+ * https://github.com/marco-fabbri/nothing-before-consent
  *
  * Deliberately neutral: the colours come from CSS variables, so every site tunes it to its own
  * appearance without touching this file. On a site copied pixel by pixel, a banner that clashes is
@@ -29,8 +31,20 @@
      white page (4.8:1) and a near-black one (3.7:1), clearing the 3:1 that WCAG 1.4.11 asks for the
      boundary of a user interface component. Override it per site if the page is neither. */
   --ck-panel-border: #6b7280;
+  /* The outline of a control inside the panel — today the tertiary buttons. Same job as
+     --ck-panel-border one scale down, and the same value for the same reason: it has to clear 3:1
+     against the surface in both themes. It cannot be --ck-border, which separates the categories:
+     a rule between two rows of text and the edge of a button you are meant to find and press are
+     different things, and the second one is a user interface component under WCAG 1.4.11. */
+  --ck-control-border: #6b7280;
   --ck-primary: #2563eb;
   --ck-primary-text: #fff;
+  /* The link's colour, apart from --ck-primary. They begin the same, and they are not the same
+     thing: --ck-primary is a background with --ck-primary-text on top of it, so it is legible by
+     construction whatever the page does, while the link is text sitting straight on --ck-surface
+     and has to clear 4.5:1 against it. Lightening --ck-primary to fix the link would take the
+     buttons' own white text down to 2.5:1 — a worse fault than the one being fixed. Hence two. */
+  --ck-link: var(--ck-primary);
   --ck-radius: 10px;
 }
 
@@ -121,7 +135,7 @@
 
 .ck-box h2 { margin: 0 0 8px; font-size: 18px; line-height: 1.3; }
 .ck-text { margin: 0 0 12px; color: var(--ck-text-muted); }
-.ck-link { display: inline-block; margin-bottom: 12px; color: var(--ck-primary); }
+.ck-link { display: inline-block; margin-bottom: 12px; color: var(--ck-link); }
 
 .ck-details { margin: 8px 0 16px; border-top: 1px solid var(--ck-border); }
 .ck-category { display: flex; gap: 10px; padding: 13px 0; border-bottom: 1px solid var(--ck-border); }
@@ -149,7 +163,7 @@
    would not be free, and it is the most frequent objection to home-made banners. */
 .ck-btn-primary { background: var(--ck-primary); color: var(--ck-primary-text); }
 .ck-btn-primary:hover { filter: brightness(1.08); }
-.ck-btn-tertiary { background: transparent; color: var(--ck-text); border-color: var(--ck-border); }
+.ck-btn-tertiary { background: transparent; color: var(--ck-text); border-color: var(--ck-control-border); }
 .ck-btn-tertiary:hover { background: #f9fafb; }
 .ck-btn:focus-visible { outline: 3px solid var(--ck-primary); outline-offset: 2px; }
 
@@ -179,6 +193,11 @@
     --ck-text: #f3f4f6;
     --ck-text-muted: #9ca3af;
     --ck-border: #374151;
+    /* On #111827 the light-mode link is 3.43:1, under the 4.5:1 that body text owes. This one is
+       6.98:1. It is the one place a site's own --ck-primary is overruled, and the trade is stated
+       rather than hidden: a brand colour that cannot be read is not carrying the brand. A site that
+       wants its own here sets --ck-link inside its own dark block. */
+    --ck-link: #60a5fa;
   }
   .ck-btn-tertiary:hover { background: #1f2937; }
   .ck-placeholder { background: #0b1220; }

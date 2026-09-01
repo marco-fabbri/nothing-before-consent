@@ -1,6 +1,10 @@
 /*!
- * consent-kit 2.1.0 — consent banner with prior blocking.
- * Versioned copy: if this number is lower than the one in the kit's CHANGELOG, the site is behind.
+ * nothing-before-consent 2.2.0 — consent banner with prior blocking.
+ * https://github.com/marco-fabbri/nothing-before-consent
+ *
+ * Versioned copy. This number is the whole of what this site knows about which version it runs, so
+ * whoever inherits the site can compare it with the tags of the repository above and find out
+ * whether the copy is behind, and whether it was edited by hand. Do not edit this line.
  *
  * The point of this file is not to show a banner: it is to stop third parties from running before
  * the choice is made. A banner that blocks nothing is the most contested arrangement of all,
@@ -19,20 +23,44 @@
 (function () {
   'use strict';
 
-  var KIT_VERSION = '2.1.0';
+  var KIT_VERSION = '2.2.0';
   var cfg = window.consentConfig || {};
 
   // The policy version lives inside the stored choice: when the services change you raise it and
   // consent is asked again, instead of inheriting a "yes" given for other recipients.
   var POLICY_VERSION = cfg.policyVersion || 1;
-  var STORAGE_KEY = cfg.storageKey || 'consent-kit';
+  var STORAGE_KEY = cfg.storageKey || 'nothing-before-consent';
+
+  // The project was called consent-kit until 2.2.0, and the default key was named after it. A
+  // rename that dropped the old key would clear every choice already made and put the banner back
+  // in front of people who had already answered — which is a cost paid by visitors for a change
+  // that is none of their business. So the old key is read once and carried over.
+  //
+  // Only when the site has not set a key of its own: if it has, there is nothing of ours to
+  // migrate and reading the old default would be picking up somebody else's choice.
+  // Remove in the next major, when no unmigrated copy can plausibly be left.
+  var LEGACY_STORAGE_KEY = cfg.storageKey ? null : 'consent-kit';
 
   // localStorage rather than a cookie: so the banner does not introduce the very thing it governs.
   // It is sent to nobody and appears in no cookie policy.
   function read() {
     try {
-      var stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (raw === null && LEGACY_STORAGE_KEY) {
+        raw = localStorage.getItem(LEGACY_STORAGE_KEY);
+        if (raw !== null) {
+          localStorage.setItem(STORAGE_KEY, raw);
+          localStorage.removeItem(LEGACY_STORAGE_KEY);
+        }
+      }
+      var stored = JSON.parse(raw || 'null');
       if (!stored || stored.version !== POLICY_VERSION) return null;
+
+      // `necessary` was not written before 2.2.0, and a choice that came back without it left
+      // scripts marked `data-consent="necessary"` inert on every visit after the first. It is true
+      // by definition — the category cannot be refused — so it is filled in rather than asked for
+      // again, and a choice stored by an older version repairs itself on the next page load.
+      stored.necessary = true;
       return stored;
     } catch (e) {
       return null; // localStorage denied (Safari private, or a hardened browser): ask again.
@@ -44,6 +72,9 @@
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
         version: POLICY_VERSION,
         when: new Date().toISOString(),
+        // Always true, and stored rather than implied: applyToNodes() looks the category up by
+        // name, so a field that is missing from the stored choice reads as a refusal.
+        necessary: true,
         analytics: !!choice.analytics,
         marketing: !!choice.marketing,
         regime: choice.regime || 'consent'
@@ -329,11 +360,32 @@
   }
 
   // Focus held inside the dialog: without it, Tab leaves for a page that cannot be used until the
-  // choice is made. Esc amounts to not deciding, so it closes nothing but the detail.
+  // choice is made. There is no Escape branch on purpose — dismissing the panel with a key would be
+  // a choice nobody made, recorded as if they had.
+  //
+  // The list has to be filtered, and this is the whole of why: the panel always contains the
+  // `necessary` checkbox, which is disabled, and the save button, which is hidden until the detail
+  // is unfolded. Taken unfiltered they are the first and last entries, neither can ever hold the
+  // focus, and so neither branch below ever runs — the trap was there, and open. Worse, with
+  // `policyUrl` set, Shift+Tab from the link would preventDefault() and then focus something
+  // hidden, which drops the visitor onto <body>.
+  function focusable() {
+    var all = dialog.querySelectorAll('button, input, a[href]');
+    var out = [];
+    for (var i = 0; i < all.length; i++) {
+      var el = all[i];
+      // offsetParent is null for anything display:none, itself or by inheritance. It is also null
+      // for position:fixed, which is why it is asked of the controls and never of the panel.
+      if (el.disabled || el.hidden || el.offsetParent === null) continue;
+      out.push(el);
+    }
+    return out;
+  }
+
   function keyboard(e) {
     if (!dialog) return;
     if (e.key === 'Tab') {
-      var f = dialog.querySelectorAll('button, input, a[href]');
+      var f = focusable();
       if (!f.length) return;
       var first = f[0], last = f[f.length - 1];
       if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
@@ -364,7 +416,7 @@
   function open(detailOnly) {
     close();
     previousFocus = document.activeElement;
-    var stored = read() || { analytics: false, marketing: false };
+    var stored = read() || { necessary: true, analytics: false, marketing: false };
 
     // Position: 'modal' (default), 'bottom', 'top', 'corner'.
     // Only the modal variant dims the page and holds the focus. The others leave it readable and
@@ -481,7 +533,7 @@
     var found = Object.keys(suspects);
     if (!found.length) return;
     console.warn(
-      '[consent-kit] ' + found.join(', ') + (found.length > 1 ? ' were loaded' : ' was loaded') +
+      '[nothing-before-consent] ' + found.join(', ') + (found.length > 1 ? ' were loaded' : ' was loaded') +
       ' without going through consent.\n' +
       'The blocking belongs in the markup, because a request written into the page leaves before any script runs:\n' +
       '  <script type="text/plain" data-consent="analytics" data-src="..."></script>\n' +
@@ -564,9 +616,15 @@
   if (stored) {
     apply(stored, true);
   } else {
-    // Before the regime is known: everything denied. It is the safe state, and it lasts a few tens
-    // of milliseconds.
-    apply({ analytics: false, marketing: false }, true);
+    // Before the choice, and before the regime is known: the two categories that need consent are
+    // denied, which is the safe state and lasts a few tens of milliseconds.
+    //
+    // `necessary` is on, and that is what the category means rather than an exception to the rule.
+    // It holds resources the visitor asked for by using the site — a form's anti-spam is the
+    // example the README gives — and no jurisdiction requires permission for them. Withholding it
+    // until the banner is answered would leave a contact form unprotected for exactly as long as
+    // somebody takes to read a dialog, which is the moment it is most needed.
+    apply({ necessary: true, analytics: false, marketing: false }, true);
     decideRegime(function (consentRequired) {
       if (consentRequired) {
         whenReady(function () { if (!nothingToGovern()) open(false); });
@@ -574,7 +632,7 @@
         // Activated without consent because none is required there. It stays recorded as 'notice'
         // and not as a consent: calling "yes" something nobody said would be a lie written into
         // the reader's own localStorage.
-        var opened = { analytics: true, marketing: true, regime: 'notice' };
+        var opened = { necessary: true, analytics: true, marketing: true, regime: 'notice' };
         save(opened);
         apply(opened, false);
         whenReady(notice);

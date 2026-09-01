@@ -1,5 +1,5 @@
 <!--
-  Modello di cookie policy — consent-kit 2.0.0
+  Modello di cookie policy — nothing-before-consent 2.2.0
   Da compilare: {{CONTROLLER}}, {{CONTACT_EMAIL}}, {{DOMAIN}}, {{UPDATED}}
   e la tabella dei servizi, che va tenuta aderente a ciò che il sito carica DAVVERO.
 

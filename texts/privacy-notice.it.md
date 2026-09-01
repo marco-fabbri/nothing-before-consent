@@ -1,5 +1,5 @@
 <!--
-  Modello di informativa privacy — consent-kit 2.0.0
+  Modello di informativa privacy — nothing-before-consent 2.2.0
   Da compilare: {{CONTROLLER}}, {{CONTACT_EMAIL}}, {{DOMAIN}}, {{UPDATED}},
   l'elenco dei servizi e le sezioni che si applicano (il modulo di contatto c'è solo su alcuni siti).
 
