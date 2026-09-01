@@ -1,5 +1,5 @@
 <!--
-  Cookie policy template — nothing-before-consent 2.2.0
+  Cookie policy template — nothing-before-consent 2.2.1
   Fill in: {{CONTROLLER}}, {{CONTACT_EMAIL}}, {{DOMAIN}}, {{UPDATED}}
   and the services table, which must match what the site actually loads.
 
@@ -23,8 +23,9 @@ are not loaded until you have made a choice.
 
 ## How consent works on this site
 
-On your first visit you are asked to choose. **Before you choose, none of the services listed below
-are loaded**: their scripts are inert and maps are replaced by a placeholder.
+On your first visit you are asked to choose. **Before you choose, none of the services that need
+your consent are loaded**: their scripts are inert and maps are replaced by a placeholder. The
+necessary ones run from the start, because the site does not work without them.
 
 Your choice is remembered in your browser (in `localStorage`, not in a cookie) and can be changed at
 any time through the **Cookie preferences** link at the bottom of every page. Withdrawing consent is
@@ -50,11 +51,12 @@ Maps, reviews, videos and affiliate links hosted by other companies, which recei
 ## Services used by {{DOMAIN}}
 
 <!-- Keep only the rows that apply. The "when" column is the one that matters: it says whether a
-     service runs before or after the choice. -->
+     service runs before or after the choice. {{WHEN}} takes one of two values and nothing else:
+     "always" for a `necessary` service, "only after consent" for `analytics` and `marketing`. -->
 
 | Service | Provider | Category | Purpose | When it runs |
 |---|---|---|---|---|
-| {{SERVICE}} | {{PROVIDER}} | {{CATEGORY}} | {{PURPOSE}} | only after consent |
+| {{SERVICE}} | {{PROVIDER}} | {{CATEGORY}} | {{PURPOSE}} | {{WHEN}} |
 
 For details on how each provider processes data, please refer to their own privacy notices, which
 this site does not control.

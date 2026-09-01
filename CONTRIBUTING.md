@@ -34,8 +34,9 @@ The version is written by hand in four places and they must all agree:
 
 | Where | What |
 |---|---|
-| `src/consent.js` | line 1, and the `KIT_VERSION` constant |
-| `src/consent.css` | line 1 |
+| `src/consent.js` | the header comment (line 2: line 1 is the `/*!` that opens it) |
+| `src/consent.js` | the `KIT_VERSION` constant |
+| `src/consent.css` | the header comment (line 1) |
 | `CHANGELOG.md` | the first `## ` entry |
 
 `tools/check-version.sh` checks it, and CI runs it on every push and pull request. On a tag it also
@@ -43,9 +44,11 @@ checks that the tag agrees; on a branch it deliberately does not, because during
 is legitimately ahead of the newest tag.
 
 **`texts/` is excluded on purpose.** Those templates carry the version they were last written for,
-and a template still saying 2.0.0 while the code is at 2.2.0 is information rather than drift — it
-says the templates did not change. Adding them to the gate would create a fifth number to bump, which
-is how a check teaches people to bump numbers without reading them.
+and a template whose header is behind the code is information rather than drift — it says the
+words did not need to change. Adding them to the gate would create a fifth number to bump, which is
+how a check teaches people to bump numbers without reading them. The corollary has teeth: **a
+template that is rewritten gets the new number, and a template whose header is bumped has to have
+been reread**, because the header is a claim that the words match the code of that release.
 
 **The tag is the act that publishes.** Until `v<version>` exists, a change in `src/` is work in
 progress and nobody is running it. Sites hold copies and compare against tags, so a tag is a promise
