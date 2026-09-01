@@ -1,5 +1,5 @@
 <!--
-  Cookie policy template — consent-kit 2.0.0
+  Cookie policy template — nothing-before-consent 2.2.0
   Fill in: {{CONTROLLER}}, {{CONTACT_EMAIL}}, {{DOMAIN}}, {{UPDATED}}
   and the services table, which must match what the site actually loads.
 

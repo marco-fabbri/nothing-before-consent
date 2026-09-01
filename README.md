@@ -1,4 +1,8 @@
-# consent-kit
+# nothing-before-consent
+
+[![Version coherence](https://github.com/marco-fabbri/nothing-before-consent/actions/workflows/check-version.yml/badge.svg)](https://github.com/marco-fabbri/nothing-before-consent/actions/workflows/check-version.yml)
+[![Latest tag](https://img.shields.io/github/v/tag/marco-fabbri/nothing-before-consent?sort=semver&label=version)](https://github.com/marco-fabbri/nothing-before-consent/tags)
+[![Licence: MIT](https://img.shields.io/badge/licence-MIT-blue.svg)](LICENSE)
 
 A consent banner with **prior blocking**, for any site whose HTML you can edit. No dependencies, two
 files to copy, no subscription.
@@ -18,6 +22,13 @@ at the edge is one way of doing it rather than the way.
 **What it is not for.** It has no TCF/IAB support, so an ad-tech setup that requires the consent
 string will not be served by it. It has three fixed categories. And the list of tracker domains the
 watchdog knows is indicative and ages — it catches an oversight, it does not certify anything.
+
+**The name is a claim, so here is its one exception.** Nothing third-party leaves the browser before
+the visitor answers — that is the whole of it, and you can check it yourself in the Network tab in
+under a minute. The kit itself makes exactly one request, only if you switch it on: `regimeUrl`, the
+endpoint that says whether prior consent is owed for this visitor. That endpoint is **yours**, on
+your own server, and it is off by default. No third party is contacted for it, and nothing loads
+while it is being asked.
 
 > **What it is not.** This kit produces working code and **text templates**. It is not legal advice
 > and it does not include the regulatory updates you pay for with a subscription to something like
@@ -43,8 +54,13 @@ Third-party resources are marked in the markup so the browser **cannot** load th
 <!-- iframe (maps, video) -->
 <iframe data-consent="marketing"
         data-consent-src="https://www.google.com/maps/embed?pb=..."
-        data-consent-label="the studio's map"></iframe>
+        data-consent-label="an embedded map"></iframe>
 ```
+
+**There is a live demo**, and it is the point of the whole thing rather than a courtesy:
+<https://marco-fabbri.github.io/nothing-before-consent/examples/demo.html>. Open it with the Network
+tab showing and reload. Before you answer, no request goes to any of the third parties on the page.
+That is a claim you can falsify in under a minute, which is the only kind worth making here.
 
 `type="text/plain"` is not executable and `data-src` is not `src`: until consent exists no request
 leaves, not even a DNS lookup. That is why the blocking must live in the markup: any mechanism that
@@ -78,11 +94,6 @@ unblock it there, without going to look for the banner.
 <button type="button" onclick="window.consent.open()">Cookie preferences</button>
 ```
 
-5. **register the site in `consumers.csv`** — one line with site, repo, the folder holding the two
-   files, and branch. It is the step that makes every future release arrive at that site as a PR: an
-   unregistered site receives nothing, and in silence. No mechanism here can notice a copy that
-   never declared it exists.
-
 `consent.js` **must** come before GA4: the Consent Mode signals only count if they arrive first.
 
 ## Categories
@@ -96,6 +107,19 @@ unblock it there, without going to look for the banner.
 Turnstile is among the necessary ones because it protects a form from spam: it is the function the
 user asked for, not profiling.
 
+**Read the three descriptions the banner shows, and change them if they do not fit.** They are
+written for a site with a contact form, analytics, and maps or reviews — the shape this came from —
+and they name those things: the default `necessary` line says the category protects your forms from
+spam. On a site with no form that is a claim about a protection you do not have, shown to a visitor,
+about data. They are templates in the same sense the files in `texts/` are, with the difference that
+these ship switched on. Override them one by one with the `texts` key:
+
+```html
+window.consentConfig = {
+  texts: { necessaryDesc: 'Required for the site to work. These cannot be turned off.' }
+};
+```
+
 ## Configuration
 
 | Key | Default | What it does |
@@ -104,7 +128,7 @@ user asked for, not profiling.
 | `consentMode` | `false` | emits the Google signals with everything `denied` before anything loads |
 | `policyUrl` | — | the link shown in the banner |
 | `position` | `modal` | `modal`, `bottom`, `top`, `corner` |
-| `storageKey` | `consent-kit` | the name of the `localStorage` entry |
+| `storageKey` | `nothing-before-consent` | the name of the `localStorage` entry |
 | `texts` | — | overrides individual strings |
 | `watchdog` | `true` | warns in the console if a known tracker got through unmarked |
 | `reloadAfterChoice` | `false` | reloads when something is switched on, for scripts that stay mute otherwise |
@@ -141,8 +165,10 @@ Colours through CSS variables, to be set in the site's own stylesheet:
 |---|---|---|
 | `--ck-primary` / `--ck-primary-text` | `#2563eb` / `#fff` | the two equal-weight buttons |
 | `--ck-surface` / `--ck-text` / `--ck-text-muted` | `#fff` / `#1f2937` / `#4b5563` | the panel and its type |
+| `--ck-link` | `--ck-primary` | the policy link, which is text and not a button |
 | `--ck-border` | `#e5e7eb` | the rules between the categories, inside the panel |
 | `--ck-panel-border` | `#6b7280` | the panel's own outline, against the page |
+| `--ck-control-border` | `#6b7280` | the outline of a control inside the panel |
 | `--ck-backdrop` | `rgba(15,23,42,.55)` | the dimming, in the `modal` variant only |
 | `--ck-radius` | `10px` | the corner |
 
@@ -151,6 +177,16 @@ so the default is a neutral grey that holds against both a white page (4.8:1) an
 (3.7:1) — the 3:1 that WCAG 1.4.11 asks for the boundary of a user interface component. It is a
 compromise by construction: on a site with a palette of its own, a neutral grey beside a warm ink
 reads as an accident. Override it with something of the site's own that still clears 3:1.
+
+**`--ck-link` starts as `--ck-primary` and is a separate variable for a reason worth knowing before
+you set the palette.** `--ck-primary` is a *background*, with `--ck-primary-text` on top of it, so
+it is legible whatever colour it is. The link is *text*, sitting straight on `--ck-surface`, and it
+owes 4.5:1 against it. The two numbers are unrelated, and a colour can pass one and fail the other:
+the `#29a9e0` in the example just above makes a fine button and a 2.7:1 link. If you set
+`--ck-primary` to something light, set `--ck-link` to a darker shade of the same hue and the panel
+still reads as yours. In dark mode `--ck-link` is the one variable the kit overrules — a brand
+colour that cannot be read is not carrying the brand — and a site that wants its own there sets
+`--ck-link` inside its own dark block.
 
 Setting some of these and not others is not a mistake — the defaults are meant to work alone — but
 a variable added by a later release will arrive at its default until the site maps it. That is what
@@ -182,24 +218,83 @@ window.addEventListener('consent:changed', e => { /* e.detail */ });
 The event is for whoever needs to do more than a `<script>`: starting a widget only after consent,
 say, while keeping an existing deferred load.
 
-## How a site is updated
+## How a site finds out it is behind
 
-The kit is **not a dependency**: every site keeps a copy, with the version written at the top of the
-file. That is because a site can change hands — if it depended on this private repo, the day it
-passes to somebody else a silent tie would remain.
+**To know which version a site is running, open its `consent.js` and read the first line.** That is
+the whole mechanism, and everything below is a way of automating that one act.
 
-**When a release comes out there is nothing to remember.** You publish a `v<version>` tag and
-`announce.yml` opens a PR on every site in `consumers.csv`, carrying the `CHANGELOG.md` entries
-between that site's version and the new one. The merge stays a decision of whoever answers for the
-site. The design and the reasoning are in
-[`docs/announcing-releases.md`](docs/announcing-releases.md).
+The kit is **not a dependency**, deliberately: every site keeps its own copy, with the version
+written at the top of the file. A site can change hands, and a copied file owes this repository
+nothing — the day it passes to somebody else there is no registry to update, no account to transfer
+and no tie to unwind. A dependency would leave one behind even from a public repo. The price of that
+choice is exactly this section: nobody is going to tell the site when a release comes out, so the
+site has to be able to ask.
 
-By hand remains possible and is sometimes right: copy the two files and open the PR yourself. To
-find out whether a site is behind, open its `consent.js` and read the first line.
+### What counts as released
+
+**The newest `v*` tag, and nothing else.** The tag is the act that publishes: until it exists, a
+change in `src/` is work in progress, and `main` may legitimately be ahead of every release.
+
+```sh
+git ls-remote --tags --refs --sort=-v:refname \
+  https://github.com/marco-fabbri/nothing-before-consent | head -1
+```
+
+No token, no API, no rate limit, and git does the version ordering. `--refs` is not optional: the
+tags are annotated objects, so without it every tag comes back twice, once as itself and once as
+`^{}`.
+
+**Read the tag, never `main`.** A check pointed at `raw.githubusercontent.com/…/main/src/consent.js`
+reads the new version number the moment a release branch is merged — which is before the tag exists —
+and tells the site it is behind a release that has not happened.
+
+### Whether the copy was edited by hand
+
+The version a copy declares is only worth something if the copy is otherwise untouched, because a
+local edit is also what makes the declared number false:
+
+```sh
+curl -sf https://raw.githubusercontent.com/marco-fabbri/nothing-before-consent/v2.2.0/src/consent.js \
+  | diff - path/to/your/consent.js
+```
+
+A `404` means the copy declares a version that was never released — edited by hand, taken from an
+unreleased `main`, or renumbered afterwards. That is a cleaner answer than a diff nobody can compute.
+
+If the two files differ, the edits belong somewhere else: colours in the `--ck-*` variables of the
+site's own stylesheet, behaviour in `window.consentConfig`, wording in `texts`. An edited copy can no
+longer be compared with its source, which is the only way to tell whether it is behind.
+
+### What a check should do with the answer
+
+- **patch or minor** — the two files, and nothing else. That is what makes an automatic check worth
+  having.
+- **major** — stop and read the release notes. A major is by definition a release where two files
+  are not enough: the site's own configuration, markup and stylesheet have to move in the same
+  commit. Compare the first component of the two version numbers and refuse to proceed when it
+  differs; a pull request carrying only the files would break the site, and it would look exactly
+  like every other one.
+
+`window.consent.version` reports what is **live** on the page, which is not always what is merged in
+the repository. Between a merge and a deploy they differ, and that gap is the site's own business.
+
+### Being told instead of asking
+
+`https://github.com/marco-fabbri/nothing-before-consent/releases.atom` is a feed of the releases: any
+reader, or a scheduled job, turns "remember to check" into "be told". `releases/latest` in the API
+exists too, but as a fallback rather than the source of truth — it orders by publication date and not
+by version, it is empty until a release is published, and it is capped at 60 requests an hour per IP,
+which shared CI runners reach.
+
+**The kit does not check for you, and will not.** It has no idea who holds a copy: nothing links a
+copied file back to here, which is the property that makes the copy free. The alternative — a registry
+where each site declares itself — was built, used, and removed in 2.2.0: a site that forgets to
+register receives nothing, in silence, which is the same failure it was meant to fix, moved one step
+back. The check belongs on the side that knows what it is running.
 
 ## Do you need a consent database?
 
-**No, not for these sites** — and wanting one would be counterproductive.
+**No, not for a site of this kind** — and wanting one would be counterproductive.
 
 Article 7 GDPR asks the controller to **be able to demonstrate** that consent was given. That is
 where the idea of logging it on a server comes from. But for a site with no accounts, demonstrating
@@ -212,9 +307,12 @@ What you demonstrate, and what suffices, is **the mechanism**:
 1. **what that person chose**: it is in their browser, with the date and the policy version — the
    `{ version, when, analytics, marketing }` the kit stores. If they dispute it, that datum is on
    their device, where it belongs;
-2. **what the banner was asking at that moment**: it is in git. The history of `consent.js`, of the
-   texts and of `policyVersion` records which categories existed, how they were described and since
-   when. It is dated evidence that cannot be rewritten afterwards, which is exactly what is needed;
+2. **what the banner was asking at that moment**: it is in git — **your** git, the repository of the
+   site, not this one. The history of your copy of `consent.js`, of your texts and of your
+   `policyVersion` records which categories existed, how they were described and since when. It is
+   dated evidence that cannot be rewritten afterwards, which is exactly what is needed. This is the
+   second reason the copy is committed to the site rather than fetched at build time: a file that
+   arrives from elsewhere at deploy has no history where you need it;
 3. **that nothing ran before the choice**: demonstrated by opening the site with the Network tab.
 
 This is why `policyVersion` is not a detail: tying the choice to a number, and raising it when the
@@ -223,7 +321,7 @@ in 2027 for five.
 
 **When a log really is needed**: newsletters with double opt-in, account registration, marketing to
 an identified person. There the consent concerns an individual you have already identified, and the
-log makes sense because it adds no data you did not have. If one of these sites ever adds a
+log makes sense because it adds no data you did not have. If a site of this kind adds a
 newsletter, the subscription consent is a different thing from this banner and belongs where the
 subscribers live.
 
