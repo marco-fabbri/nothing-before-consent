@@ -69,6 +69,13 @@ steps in later arrives once the request has already gone.
 In place of a blocked iframe a **placeholder** appears, saying what is missing and letting you
 unblock it there, without going to look for the banner.
 
+![A dark rounded box where a map should be, reading "Seeing an embedded map requires your consent to
+external content.", with a Show button and a Manage consent button](examples/placeholder.png)
+
+That box is the whole argument in one picture: the map is not hidden, it was never fetched. Google
+does not know you are reading this page, and the visitor is told so and given the way back in the
+same place rather than being sent to look for a banner.
+
 ## Installation
 
 1. copy `src/consent.js` and `src/consent.css` into the site
