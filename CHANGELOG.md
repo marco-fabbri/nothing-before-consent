@@ -3,6 +3,81 @@
 Every site keeps a copy of `consent.js` with the version written in the comment at its top. To find
 out whether a site is behind, open that file and compare it with this list.
 
+## 2.3.0 — 1 September 2026
+
+A minor, because every item is a new key, a new file or a behaviour a site may want to look at. None
+of them changes what a site has to do to install the kit: the two files, and nothing else.
+
+**A choice now has an age.** `maxAgeDays`, default 365: a stored choice older than that is asked
+again. The README has argued since 1.2.0 that tying consent to a version is what stops a "yes"
+given in 2026 for two services from holding in 2027 for five — and nothing enforced the 2027 half of
+that sentence. A human raising `policyVersion` was the only renewal path, and a human is the part
+that forgets. The Italian Garante's guidelines put the floor at six months, CNIL's ceiling is
+thirteen; a year is inside both. `maxAgeDays: 0` switches it off, for a site that has a reason.
+
+**A notice is re-asked after a day.** A visitor outside the consent regime is recorded as `notice`
+with everything on, and that record used to hold for ever: the same person, back in a country where
+consent is owed, had everything running with no banner and no consent. The file's own reasoning —
+being wrong that way is a violation — was written two functions above the code that ignored it. A
+notice older than a day is now asked of the site's endpoint again on the next visit; if the answer
+has changed, the record is dropped and the banner asks. One request a day, to your own server, and
+only for these visitors: the name still holds.
+
+**`tools/check-copy.sh` — the major-version refusal is a mechanism again.** 2.2.0 removed the
+announcing script, and with it the one piece of code that compared major versions and refused to
+proceed. The README kept the instruction; nothing executed it. This script reads the header of a
+copy, fetches the newest tag with `git ls-remote`, compares the copy byte for byte with the release
+it claims, and answers with an exit code: `0` current, `1` behind by a patch or a minor, `2` behind
+by a major — where it refuses to say "copy the files", because that is the answer that would break
+the site — `3` not the file it claims to be, `4` could not check. No token, no API, no account,
+which is what going public bought. The three sites that hold copies can run it as they are.
+
+**Loaded twice, the second copy stops.** A theme that carries the snippet in both a head partial and
+a page template gave two panels, two focus traps fighting over Tab, and one `window.consent`
+overwriting the other. The second copy now says so in the console and does nothing.
+
+**Focus goes to the panel, not to "Accept all".** The first button in the markup was the one that
+took the focus when the panel opened, so Enter accepted. A default handed to one of two answers, on
+a panel whose whole design is that the two weigh the same. The panel itself takes the focus now
+(with `tabindex="-1"`, which is what the ARIA authoring practices ask for a dialog), a screen reader
+reads the title and the text before any control, and Tab reaches the buttons in order. The trap
+knows that the panel is not in its list: from there Tab goes to the first control and Shift+Tab to
+the last, instead of leaving.
+
+**Under a nonce-based Content Security Policy, activated scripts keep their nonce.** The browser
+empties the `nonce` attribute after parsing, on purpose, so the attribute loop never saw it and every
+activated script was blocked. The property still carries it, and it is copied. The README's
+installation section now says what a policy has to allow, including the case it cannot fix: an inline
+marked script becomes an inline script at activation, and a hash for it will not match.
+
+**Four lines of CSS against the host theme**, in the spirit of the `box-sizing` line from 2.1.0:
+
+- `.ck-box [hidden] { display: none !important }`. The detail and the save button fold away with
+  the `hidden` attribute, and the browser's own rule for it loses to *any* author rule that sets
+  `display` on a div or a button. A theme with one showed the whole panel unfolded from the first
+  paint.
+- the policy link is underlined. A theme that strips underlines (Casper does) left it told apart by
+  colour alone, which WCAG 1.4.1 says is not telling it apart.
+- the checkboxes declare `appearance: auto` and `accent-color: var(--ck-primary)`: a theme that
+  removes the native checkbox to draw its own drew nothing for these two.
+- `max-height` in `dvh`, with the `vh` line kept as the fallback: on a phone the panel with the
+  detail unfolded could run under the browser's bars.
+
+**The dark block is documented.** It has existed since 1.0.0 and swapped five variables on a dark
+system; the palette table never said so, and a light-only site overriding just `--ck-surface` got
+its own white under the kit's near-white text. The README now says which variables move and what
+to do about it.
+
+Considered, and not done, so that nobody proposes them twice:
+
+- **Escape closing the panel.** It still does nothing, deliberately (`consent.js` says why at the
+  focus trap). Closing without saving would be safe — everything stays blocked and the banner
+  returns — but a panel that vanishes on a keypress teaches that the panel can be made to vanish,
+  which is not the lesson.
+- **A guardian for a missing withdrawal link**, to match the one for unmarked trackers. It is not
+  detectable without lying: a footer button wired with `addEventListener` leaves nothing in the
+  markup to find, and a check that cannot see it would report a defect the site does not have.
+
 ## 2.2.1 — 1 September 2026
 
 A release made by reading what the last one claimed and checking each claim against the tree, the
