@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>consent-kit demo</title>
+<title>nothing-before-consent — demo</title>
 <link rel="stylesheet" href="../src/consent.css">
 
 <!-- ?page=casper reproduces a Ghost/Casper site: a 62.5% root, and a page that is white or
@@ -26,25 +26,32 @@
     policyVersion: 1,
     consentMode: true,
     position: new URLSearchParams(location.search).get('pos') || 'modal',
-    policyUrl: '/privacy'
+    // A real site points this at its own page. Here it goes to the template the
+    // repository ships, so the link in the banner is not a 404.
+    policyUrl: 'https://github.com/marco-fabbri/nothing-before-consent/blob/main/texts/privacy-notice.en.md'
   };
 </script>
 <script src="../src/consent.js"></script>
 
-<!-- The staybycity case: GA4, analytics category -->
+<!-- The common case: GA4, analytics category. The id is a placeholder, so after
+     consent the request leaves and fails — which is the half being demonstrated. -->
 <script type="text/plain" data-consent="analytics"
-        data-src="https://www.googletagmanager.com/gtag/js?id=G-TE8ZVVY2Z5"></script>
+        data-src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
 <script type="text/plain" data-consent="analytics">
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
-  gtag('config', 'G-TE8ZVVY2Z5');
-  document.getElementById('ga-result').textContent = 'GA4: inline script executed';
+  gtag('config', 'G-XXXXXXXXXX');
+  // Written to a global rather than straight to the DOM. When the choice is already known, the kit
+  // activates this script as the parser reaches it — which is the whole point, since a widget
+  // activated after DOMContentLoaded initialises and then draws nothing — and at that instant the
+  // element below does not exist yet. The page reads this variable once it is built.
+  window.__gaRan = true;
 </script>
 </head>
 <body style="font-family:system-ui;max-width:44rem;margin:2rem auto;padding:0 1rem">
 
-<h1>consent-kit demo</h1>
+<h1>nothing-before-consent</h1>
 <p>Open the <strong>Network</strong> tab and reload: before the choice there must be no request
 towards googletagmanager, trustindex or google.com/maps.</p>
 
@@ -53,7 +60,7 @@ towards googletagmanager, trustindex or google.com/maps.</p>
 <p id="ga-result">GA4: inline script not executed yet</p>
 
 <h2>Map (marketing)</h2>
-<iframe data-consent="marketing" data-consent-label="the studio's map"
+<iframe data-consent="marketing" data-consent-label="an embedded map"
         data-consent-src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2846.38!2d11.36!3d44.48!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1"
         width="100%" height="300" style="border:0" title="Map"></iframe>
 
@@ -70,10 +77,21 @@ disappear into the article.</p>
 <a href="?pos=top">top</a> · <a href="?pos=corner">corner</a>
 (once you have chosen, use <em>Revoke and reload</em> to see the banner again).</p>
 
+<h2>Necessary (no consent required)</h2>
+<p id="necessary-result">necessary script: not executed</p>
+<p>This one is marked <code>data-consent="necessary"</code>: it must run on the first visit
+<strong>and on every visit after it</strong>, without ever being asked about. Accept or reject, then
+reload — this line has to keep saying "executed" either way.</p>
+<script type="text/plain" data-consent="necessary" data-src="./necessary-example.js"></script>
+
 <h2>Watchdog</h2>
 <p>Below there is deliberately an <strong>unmarked</strong> tracking script: the kit cannot block it,
 but it must say so in the console within a few seconds of loading.</p>
-<script src="https://www.clarity.ms/tag/unmarked-example"></script>
+<!-- The path is a tracker's, the host is this one, and the file is not there. The watchdog matches
+     a substring of each loaded resource's URL, so a request that 404s on our own origin trips it
+     exactly as a real one would. A page whose argument is that no third party is contacted before
+     consent must not contact one to make the argument — least of all on the demo everybody opens. -->
+<script src="./www.clarity.ms/tag/unmarked-example.js"></script>
 
 <h2>Controls</h2>
 <p>
@@ -87,6 +105,10 @@ but it must say so in the console within a few seconds of loading.</p>
     document.getElementById('state').textContent =
       'stored choice: ' + (s ? JSON.stringify(s, null, 2) : 'none') +
       '\ndataLayer: ' + JSON.stringify(window.dataLayer || []);
+    document.getElementById('ga-result').textContent =
+      window.__gaRan ? 'GA4: inline script executed' : 'GA4: inline script not executed yet';
+    document.getElementById('necessary-result').textContent =
+      window.__necessaryRan ? 'necessary script: executed' : 'necessary script: NOT executed';
   }
   refreshState();
   window.addEventListener('consent:changed', function (e) {

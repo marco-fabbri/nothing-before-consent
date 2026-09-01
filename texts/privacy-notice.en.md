@@ -1,5 +1,5 @@
 <!--
-  Privacy notice template — consent-kit 2.0.0
+  Privacy notice template — nothing-before-consent 2.2.0
   Fill in: {{CONTROLLER}}, {{CONTACT_EMAIL}}, {{DOMAIN}}, {{UPDATED}},
   the list of services, and keep only the sections that apply (not every site has a contact form).
 
