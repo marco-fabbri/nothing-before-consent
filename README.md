@@ -103,6 +103,9 @@ same place rather than being sent to look for a banner.
 
 `consent.js` **must** come before GA4: the Consent Mode signals only count if they arrive first.
 
+`policyUrl` points at a page you have to have. If you do not have one yet, `texts/` holds a draft of
+it and of the cookie policy — see [the two documents the banner links to](#the-two-documents-the-banner-links-to).
+
 ## Categories
 
 | Category | What it holds | Consent |
@@ -126,6 +129,46 @@ window.consentConfig = {
   texts: { necessaryDesc: 'Required for the site to work. These cannot be turned off.' }
 };
 ```
+
+## The two documents the banner links to
+
+A banner is half of the job. The other half is the two pages it points at, and `texts/` holds a draft
+of both, in English and Italian:
+
+| File | What it is |
+|---|---|
+| `texts/privacy-notice.en.md` · `.it.md` | who the controller is, what is collected automatically and what you provide, who receives it, how long it is kept, your rights |
+| `texts/cookie-policy.en.md` · `.it.md` | cookies and the technologies treated the same way, how consent works on the site, the three categories, the table of services, how to switch them off in the browser |
+
+They are written to be read rather than to be survived: where a sentence is vague, that is a defect
+to fix and not caution.
+
+**To use them**, fill in `{{CONTROLLER}}`, `{{CONTACT_EMAIL}}`, `{{DOMAIN}}` and `{{UPDATED}}`, plus
+`{{PRIVACY_URL}}` and `{{COOKIE_POLICY_URL}}` so the two point at each other. Then three things have
+to be decided rather than filled:
+
+- **the services table** in the cookie policy. One row per third party the site actually loads, and
+  the "when it runs" column is the one that carries the weight — it is where the page stops
+  describing an intention and starts describing this site. A table that does not match what the
+  Network tab shows is worse than no table.
+- **the sections that do not apply.** The privacy notice assumes a contact form; a site without one
+  deletes that section rather than leaving a description of data it never receives.
+- **the supervisory authority.** The draft names the Italian Garante, because that is where it was
+  written. Change it to yours.
+
+Each file opens with a comment saying what to fill and what to cut, including the one thing people
+most often get wrong: Art. 13 GDPR asks for the controller's *identity and contact details*, and a
+monitored email address satisfies that. **A home address is not required.**
+
+Keep the two language versions in step: if you change one, change the other. The version in each
+file's header is the release the text was last written for, not the release you are on — a template
+still saying 2.0.0 means the words did not need to change, which is why `texts/` is left out of the
+coherence check.
+
+And the part this repository cannot do for you, which is why it is said twice: these are a starting
+point, not legal advice, and they have to be read and validated by whoever answers for the data
+controller. What the kit can hand you is the shape of the argument and the technical facts, which is
+the tedious half.
 
 ## Configuration
 

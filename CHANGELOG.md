@@ -70,6 +70,13 @@ carries its own text and is legible whatever it is, while a link is text on the 
 white text to 2.5:1. A site that does not map them gets the defaults, which hold in both themes. In
 dark mode `--ck-link` is the one variable the kit overrules on a site's behalf.
 
+**The text templates are now mentioned as something you can use.** `texts/` has shipped a privacy
+notice and a cookie policy, in English and Italian, since 1.0.0 — and the README named the folder
+only three times, every time as a warning that they are not legal advice. It never said they exist.
+Meanwhile step 2 of the installation has you write a `policyUrl` pointing at a page you are left to
+write yourself, with no hint that a draft is in the box. Nothing about the files changed; they are
+findable now.
+
 **`--ck-` and `.ck-` stay as they are**, and no longer abbreviate the name. Renaming them is the only
 part of a rename that would break anything, because those variables are the ones a site sets in its
 *own* stylesheet — an abbreviation that has come loose from its word is a much smaller price than a
