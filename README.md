@@ -117,6 +117,11 @@ for this visit only. The demo has one.
 
 `consent.js` **must** come before GA4: the Consent Mode signals only count if they arrive first.
 
+**If the site sends a Content Security Policy**, know that activation works by creating a new
+`<script>`: an external one keeps its `nonce`, so a nonce-based `script-src` is fine, but an
+*inline* marked script becomes an inline script at activation and needs `'unsafe-inline'` or a
+nonce on the marked element. A policy with a hash for the inline code will not match it.
+
 `policyUrl` points at a page you have to have. If you do not have one yet, `texts/` holds a draft of
 it and of the cookie policy — see [the two documents the banner links to](#the-two-documents-the-banner-links-to).
 
@@ -190,6 +195,7 @@ the tedious half.
 | Key | Default | What it does |
 |---|---|---|
 | `policyVersion` | `1` | raising it asks for consent again instead of inheriting the old answer |
+| `maxAgeDays` | `365` | a choice older than this is asked again; `0` never expires it |
 | `consentMode` | `false` | emits the Google signals with everything `denied` before anything loads |
 | `policyUrl` | — | the link shown in the banner |
 | `position` | `modal` | `modal`, `bottom`, `top`, `corner` |
@@ -257,6 +263,13 @@ Setting some of these and not others is not a mistake — the defaults are meant
 a variable added by a later release will arrive at its default until the site maps it. That is what
 a minor version is telling you to go and check.
 
+**There is a dark block, and it is on by default.** When the visitor's system prefers dark, the kit
+swaps `--ck-surface`, `--ck-text`, `--ck-text-muted`, `--ck-border` and `--ck-link` for dark
+values of its own. A light-only site that overrides just `--ck-surface` therefore gets, on a dark
+system, its own white surface under the kit's near-white text. Override the set, or override it
+inside your own `prefers-color-scheme: dark` block as well; a site that has no dark mode at all
+sets the light values under both.
+
 ## The geographic regime
 
 Where prior consent is owed — the EU, the EEA and the UK — nothing loads until the visitor answers.
@@ -269,7 +282,10 @@ and **any failure counts as "consent required"** — being wrong by showing a ba
 did not need one is an annoyance, being wrong the other way is a violation.
 
 Whoever gets the notice is recorded as `regime: "notice"`, never as a consent: calling "yes"
-something nobody said would be a lie written into the reader's own browser.
+something nobody said would be a lie written into the reader's own browser. And a notice is a
+statement about where the visitor was, so it is taken at its word for a day and then asked of the
+endpoint again, on the next visit: the same person back inside the EU gets the banner, not the
+services. Only these visitors cost that daily request, and it goes to your own server.
 
 ## API
 
@@ -277,7 +293,7 @@ something nobody said would be a lie written into the reader's own browser.
 window.consent.open()     // reopens the choice, with the detail already unfolded
 window.consent.state()    // { version, when, necessary, analytics, marketing, regime } or null
 window.consent.revoke()   // clears the choice and reloads
-window.consent.version    // the kit version live on this page, e.g. '2.2.1'
+window.consent.version    // the kit version live on this page, e.g. '2.3.0'
 window.addEventListener('consent:changed', e => { /* e.detail */ });
 ```
 
@@ -292,6 +308,19 @@ say, while keeping an existing deferred load.
 **To know which version a site is running, open its `consent.js` and read the header.** The
 version is in the comment at the top, on the second line (the first is the `/*!` that opens it).
 That is the whole mechanism, and everything below is a way of automating that one act.
+
+The automation exists, and it is one file:
+
+```sh
+tools/check-copy.sh path/to/your/consent.js
+```
+
+It needs `git` and `curl`, no token and no account, and it answers with an exit code a job can act
+on: `0` current, `1` behind by a patch or a minor (copy the two files), `2` behind by a **major**
+(it refuses to say "copy the files", because that would break the site; read the notes), `3` the
+copy is not the file its header claims (edited by hand, or never released), `4` could not check.
+The rest of this section is what that script does, and why, for whoever would rather write their
+own or needs to know what an answer means.
 
 The kit is **not a dependency**, deliberately: every site keeps its own copy, with the version
 written at the top of the file. A site can change hands, and a copied file owes this repository
@@ -355,6 +384,9 @@ longer be compared with its source, which is the only way to tell whether it is 
   commit. Compare the first component of the two version numbers and refuse to proceed when it
   differs; a pull request carrying only the files would break the site, and it would look exactly
   like every other one.
+
+That is the check `tools/check-copy.sh` performs, and its exit code `2` is the refusal: a major
+is the one answer where doing the mechanical thing is worse than doing nothing.
 
 `window.consent.version` reports what is **live** on the page, which is not always what is merged in
 the repository. Between a merge and a deploy they differ, and that gap is the site's own business.

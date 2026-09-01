@@ -1,5 +1,5 @@
 /*!
- * nothing-before-consent 2.2.1 — consent banner with prior blocking.
+ * nothing-before-consent 2.3.0 — consent banner with prior blocking.
  * https://github.com/marco-fabbri/nothing-before-consent
  *
  * Versioned copy. This number is the whole of what this site knows about which version it runs, so
@@ -23,7 +23,16 @@
 (function () {
   'use strict';
 
-  var KIT_VERSION = '2.2.1';
+  var KIT_VERSION = '2.3.0';
+
+  // Loaded twice — a theme that carries the snippet in both its head partial and a page template,
+  // say — would mean two panels, two focus traps fighting, and one `window.consent` overwriting the
+  // other. The second copy says so and stops.
+  if (window.consent) {
+    if (window.console) console.warn('[nothing-before-consent] consent.js is on this page twice; the second copy did nothing. Keep the one in <head>.');
+    return;
+  }
+
   var cfg = window.consentConfig || {};
 
   // The policy version lives inside the stored choice: when the services change you raise it and
@@ -62,6 +71,13 @@
       }
       var stored = JSON.parse(raw || 'null');
       if (!stored || stored.version !== POLICY_VERSION) return null;
+
+      // A choice has an age. `policyVersion` asks again when the services change; this asks again
+      // when enough time has passed that nobody could say the visitor still means it. A year by
+      // default: the Italian Garante's guidelines put the floor at six months, CNIL's ceiling is
+      // thirteen. `maxAgeDays: 0` switches it off.
+      var maxAge = cfg.maxAgeDays === undefined ? 365 : cfg.maxAgeDays;
+      if (maxAge > 0 && stored.when && Date.now() - Date.parse(stored.when) > maxAge * 86400000) return null;
 
       // `necessary` was not written before 2.2.0, and a choice that came back without it left
       // scripts marked `data-consent="necessary"` inert on every visit after the first. It is true
@@ -129,6 +145,9 @@
       s.setAttribute(a.name, a.value);
     }
     var src = node.getAttribute('data-src');
+    // Under a nonce-based Content Security Policy the nonce is the one attribute the loop above
+    // cannot copy: the browser empties it after parsing, on purpose. The property still has it.
+    if (node.nonce) s.nonce = node.nonce;
     if (activationTime === Infinity) activationTime = performance.now();
     // The resolved address, not the attribute as written: the watchdog compares it with what the
     // browser reports having fetched, and that is always absolute.
@@ -414,8 +433,11 @@
       var f = focusable();
       if (!f.length) return;
       var first = f[0], last = f[f.length - 1];
-      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      // The panel itself holds the focus when it opens, and it is not in the list: from there, Tab
+      // goes to the first control and Shift+Tab to the last, instead of leaving for the page.
+      var outside = f.indexOf(document.activeElement) === -1;
+      if (e.shiftKey && (outside || document.activeElement === first)) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && (outside || document.activeElement === last)) { e.preventDefault(); first.focus(); }
     }
   }
 
@@ -464,6 +486,7 @@
     box.className = 'ck-box';
     box.setAttribute('role', 'dialog');
     box.setAttribute('aria-labelledby', 'ck-title');
+    box.tabIndex = -1; // so the panel itself can take the focus; see the end of this function
     // aria-modal lies to a screen reader if the page stays navigable: declare it only where it is
     // true, or someone using one believes they are trapped when they are not.
     if (modal) box.setAttribute('aria-modal', 'true');
@@ -521,15 +544,19 @@
     dialog.appendChild(box);
     document.body.appendChild(dialog);
 
+    // The focus goes to the panel, not to a button. It used to land on "Accept all", which is the
+    // first button in the markup, so Enter accepted: a default handed to one answer, on a panel
+    // whose whole design is that the two answers weigh the same. From the panel a screen reader
+    // announces the title and the text before any control, and Tab reaches the buttons in order.
     if (modal) {
       // Focus held: with the page dimmed, tabbing out would land on content that cannot be used
       // until the choice is made.
       document.addEventListener('keydown', keyboard, true);
-      box.querySelector('button').focus();
+      box.focus();
     } else if (detailOnly) {
       // Reopened from the footer: whoever pressed "Preferences" expects to arrive there with the
       // focus. On an automatic opening it does not move, so as not to interrupt the reading.
-      box.querySelector('button').focus();
+      box.focus();
     }
   }
 
@@ -656,7 +683,23 @@
   }
 
   var stored = read();
-  if (stored) {
+
+  // A notice is a statement about where the visitor was, and people move. Recorded as `notice` it
+  // used to hold for ever: the same person, back in a country where consent is owed, had everything
+  // running with no banner and no consent. So a notice is taken at its word for a day and then asked
+  // of the server again — one request, to the site's own endpoint, and only for these visitors. If
+  // the answer has changed, the record is dropped and the banner asks. For a notice, `when` is the
+  // last time the regime was confirmed, which is what it should mean.
+  var NOTICE_RECHECK = 86400000;
+  var staleNotice = stored && stored.regime === 'notice' && Date.now() - Date.parse(stored.when) > NOTICE_RECHECK;
+
+  if (staleNotice) {
+    // Gone before the question is asked again: while the server is answering, state() must not
+    // report a record that is being doubted, and the watchdog must not read it as a consent.
+    try { localStorage.removeItem(STORAGE_KEY); } catch (e) { /* then it is asked again next time too */ }
+  }
+
+  if (stored && !staleNotice) {
     apply(stored, true);
   } else {
     // Before the choice, and before the regime is known: the two categories that need consent are
