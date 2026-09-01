@@ -1,5 +1,5 @@
 <!--
-  Modello di cookie policy — nothing-before-consent 2.2.0
+  Modello di cookie policy — nothing-before-consent 2.2.1
   Da compilare: {{CONTROLLER}}, {{CONTACT_EMAIL}}, {{DOMAIN}}, {{UPDATED}}
   e la tabella dei servizi, che va tenuta aderente a ciò che il sito carica DAVVERO.
 
@@ -24,7 +24,8 @@ scelta.
 ## Come funziona il consenso su questo sito
 
 Alla prima visita compare una richiesta di scelta. **Prima della scelta non viene caricato nessuno
-dei servizi elencati sotto**: gli script sono inerti e le mappe sostituite da un segnaposto.
+dei servizi che richiedono il consenso**: gli script sono inerti e le mappe sostituite da un
+segnaposto. Quelli necessari partono da subito, perché senza di loro il sito non funziona.
 
 La scelta è ricordata nel browser (in `localStorage`, non in un cookie) e può essere cambiata in
 qualsiasi momento dal link **Preferenze cookie** presente in fondo a ogni pagina. Ritirare il
@@ -52,11 +53,12 @@ di chi visita.
 ## I servizi usati da {{DOMAIN}}
 
 <!-- Tenere solo le righe che corrispondono al sito. La colonna "quando" è la parte che conta:
-     dice se il servizio parte prima o dopo la scelta. -->
+     dice se il servizio parte prima o dopo la scelta. {{WHEN}} ammette due valori e basta:
+     "sempre" per un servizio `necessary`, "solo dopo il consenso" per `analytics` e `marketing`. -->
 
 | Servizio | Fornitore | Categoria | A cosa serve | Quando parte |
 |---|---|---|---|---|
-| {{SERVICE}} | {{PROVIDER}} | {{CATEGORY}} | {{PURPOSE}} | solo dopo il consenso |
+| {{SERVICE}} | {{PROVIDER}} | {{CATEGORY}} | {{PURPOSE}} | {{WHEN}} |
 
 Per il dettaglio di come ciascun fornitore tratta i dati si rimanda alle rispettive informative,
 che questo sito non controlla.

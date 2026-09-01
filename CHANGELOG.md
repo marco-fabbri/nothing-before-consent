@@ -1,7 +1,82 @@
 # Release history
 
-Every site keeps a copy of `consent.js` with the version written on its first line. To find out
-whether a site is behind, open that file and compare it with this list.
+Every site keeps a copy of `consent.js` with the version written in the comment at its top. To find
+out whether a site is behind, open that file and compare it with this list.
+
+## 2.2.1 — 1 September 2026
+
+A release made by reading what the last one claimed and checking each claim against the tree, the
+demo and the copies in the wild. Nothing in it is new. Everything in it is something 2.2.0 said that
+was not true, or did not say and should have.
+
+**Three claims of the project's own were false in the way the project exists to prevent.**
+
+- **"Read the first line" was off by one.** Line 1 of `consent.js` is `/*!`; the version is on
+  line 2, and has been in every release. The README, this file, CONTRIBUTING and the labels in
+  `tools/check-version.sh` all said line 1 — the script reads three lines and was right; only what
+  it said about itself was wrong. A check written to the letter of that instruction finds nothing
+  and, by the README's own argument, concludes the file is unreadable rather than old. The
+  instruction now says "the header", and the README gives the one-line `grep` that does not care
+  which line.
+- **The cookie policy templates told the visitor that nothing runs before the choice.** Since 2.2.0
+  `necessary` runs before the banner is answered, which is correct and was announced — and the
+  sentence in `texts/cookie-policy.*` saying that "none of the services listed below are loaded"
+  was left as it was, under a header stamped 2.2.0 in the same commit, with the category it
+  contradicted in the list beneath it. Reworded in both languages. And the services table no
+  longer pre-fills "only after consent" in the one column the README calls load-bearing: `{{WHEN}}`
+  is a blank to fill, with the two values it may take written beside it.
+- **The watchdog stopped watching after the first answer.** Its exemption for resources that
+  started after the kit activated something was unconditional. For a returning visitor the observer
+  activates the first marked script during parsing, a few milliseconds in, so every unmarked tracker
+  further down the page counted as a consequence of consent and was never reported. Accept once on
+  your own site and the check went quiet for good; reproducible on the demo. The exemption now holds
+  only where something was consented to. With no answer, or a refusal, nothing the kit activated can
+  legitimately call a tracker, so everything the page contacted is examined — which is the state in
+  which a leak is a violation, and the state the check exists for.
+
+**Five smaller ones in the runtime, each a case nobody had hit:**
+
+- `reloadAfterChoice` on a browser that refuses `localStorage` reloaded on a choice that had not
+  been stored, found none, and put the banner back: every click a page load that changed nothing.
+  `save()` now says whether it worked, and the reload waits for a yes.
+- the carry-over of the old `consent-kit` key ran inside the read, so a write that failed threw
+  away a choice that had been read correctly and asked again. It has its own `try`.
+- the parse-time observer started only when `analytics` or `marketing` was on, so a `necessary`
+  widget that draws itself got the treatment 2.2.0 describes only for a visitor who had accepted
+  the rest. It starts on every initial pass.
+- saving from the panel opened through a placeholder's "Manage consent" returned the focus to that
+  placeholder, which the save had just removed, and the visitor landed on `<body>`. The focus now
+  goes to what the placeholder stood for — the iframe, or the container — so the keyboard resumes
+  from where the visitor was.
+- outside the consent regime the informative notice appeared even on a page with nothing marked.
+  The banner has had that guard since 1.2.0; the notice did not.
+
+**The demo.** The map's embed string was one Google rejects, so accepting produced an error box in
+the very place the argument's own picture belongs. The reviews widget was the one the three original
+sites happen to use, a reference that explains nothing to anybody else: replaced by an embedded video
+on `youtube-nocookie.com`, and by a self-drawing widget marked with `data-consent-placeholder` and
+`data-consent-activates` — two attributes that have existed since 1.2.0 and had appeared in no README
+until now.
+
+**Documentation that described the previous release.** `state()` was documented without `necessary`
+and `regime`, the two fields 2.2.0 added and spent a paragraph on. `window.consent.version` was used
+in the README and missing from its API block. The `storageKey` row now says that storage is per
+origin. The "template still saying 2.0.0" illustration described a state no file was in. The 2.0.0
+rename table listed two files that did not exist before 2.0.0, and 2.1.0 was dated a day early.
+
+The paragraph that follows was added to the 2.2.0 entry three commits after `v2.2.0` was tagged —
+a record edited after the act it records. It moves here, under the tag it will actually ship with.
+
+**The text templates are now mentioned as something you can use.** `texts/` has shipped a privacy
+notice and a cookie policy, in English and Italian, since 1.0.0 — and the README named the folder
+only three times, every time as a warning that they are not legal advice. It never said they exist.
+Meanwhile step 2 of the installation has you write a `policyUrl` pointing at a page you are left to
+write yourself, with no hint that a draft is in the box. Nothing about the files changed; they are
+findable now.
+
+Also: `tools/check-version.sh --tag` with no value reported an unbound variable instead of saying
+what it needed; the workflow declares `permissions: contents: read`; `.gitignore` no longer mentions
+a `node_modules/` this repository refuses to have.
 
 ## 2.2.0 — 1 September 2026
 
@@ -70,13 +145,6 @@ carries its own text and is legible whatever it is, while a link is text on the 
 white text to 2.5:1. A site that does not map them gets the defaults, which hold in both themes. In
 dark mode `--ck-link` is the one variable the kit overrules on a site's behalf.
 
-**The text templates are now mentioned as something you can use.** `texts/` has shipped a privacy
-notice and a cookie policy, in English and Italian, since 1.0.0 — and the README named the folder
-only three times, every time as a warning that they are not legal advice. It never said they exist.
-Meanwhile step 2 of the installation has you write a `policyUrl` pointing at a page you are left to
-write yourself, with no hint that a draft is in the box. Nothing about the files changed; they are
-findable now.
-
 **`--ck-` and `.ck-` stay as they are**, and no longer abbreviate the name. Renaming them is the only
 part of a rename that would break anything, because those variables are the ones a site sets in its
 *own* stylesheet — an abbreviation that has come loose from its word is a much smaller price than a
@@ -88,7 +156,7 @@ the sites are not all in the same hands.
 front of somebody who had already answered — including somebody who had said no, which is the case
 that matters. `policyVersion` is untouched. The migration goes away in the next major.
 
-## 2.1.0 — 1 August 2026
+## 2.1.0 — 2 August 2026
 
 - **the panel has an outline.** Until now it was the same colour as the page it sat on — 1.00:1
   against a white page, 1.11:1 against a dark one — with a shadow as its only separator, and a
@@ -138,7 +206,8 @@ renames:
 | `.ck-fondo`, `.ck-segnaposto`, `.ck-categoria`, `.ck-azioni`, `.ck-dettaglio`, `.ck-btn-primario`, `.ck-btn-terziario` | `.ck-backdrop`, `.ck-placeholder`, `.ck-category`, `.ck-actions`, `.ck-details`, `.ck-btn-primary`, `.ck-btn-tertiary` |
 | event `consenso:cambiato` | event `consent:changed` |
 | the endpoint's `{"consensoRichiesto": …}` | `{"consentRequired": …}` |
-| `consumatori.csv`, `strumenti/`, `testi/`, `esempi/` | `consumers.csv`, `tools/`, `texts/`, `examples/` |
+| `testi/`, `esempi/` | `texts/`, `examples/` |
+| `testi/informativa-privacy.*.md`, `esempi/prova.html` | `texts/privacy-notice.*.md`, `examples/demo.html` |
 
 **No compatibility layer, deliberately.** The kit could have accepted both spellings for a while,
 and it does not: three sites, all in the same hands, all with a PR flow — a permanent piece of

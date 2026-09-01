@@ -3,9 +3,9 @@
 # The coherence gate: the version is written by hand in four places, and they must all say the same
 # number.
 #
-#   src/consent.js       line 1, the header a copied file carries with it
+#   src/consent.js       the header (line 2), which a copied file carries with it
 #   src/consent.js       the KIT_VERSION constant
-#   src/consent.css      line 1
+#   src/consent.css      the header (line 1)
 #   CHANGELOG.md         the first `## ` entry
 #
 # Four numbers kept in step by hand do not stay in step. A wrong one does not produce an error — it
@@ -32,7 +32,10 @@ TAG=""
 
 while [ $# -gt 0 ]; do
   case "$1" in
-    --tag) TAG="$2"; shift 2 ;;
+    --tag)
+      TAG="${2:-}"
+      if [ -z "$TAG" ]; then echo "--tag needs a value, e.g. --tag v2.2.1" >&2; exit 2; fi
+      shift 2 ;;
     *) echo "unknown option: $1" >&2; exit 2 ;;
   esac
 done
@@ -47,14 +50,14 @@ CONSTANT="$(sed -n "s/.*KIT_VERSION = '\([0-9][0-9.]*\)'.*/\1/p" src/consent.js 
 FROM_CHANGELOG="$(grep -m1 '^## ' CHANGELOG.md | sed -n 's/^## \([0-9][0-9.]*\).*/\1/p')"
 
 # Whichever number we compare the others against has to come from somewhere. With --tag it is the
-# tag, because that is the thing being published; without it, consent.js line 1 — the one field
+# tag, because that is the thing being published; without it, the consent.js header — the one field
 # every released version has carried, and the one a copied file takes with it.
 if [ -n "$TAG" ]; then
   EXPECTED="${TAG#v}"
   AUTHORITY="the tag $TAG"
 else
   EXPECTED="$HEADER_JS"
-  AUTHORITY="src/consent.js line 1"
+  AUTHORITY="src/consent.js header"
 fi
 
 if [ -z "$EXPECTED" ]; then
@@ -63,8 +66,8 @@ if [ -z "$EXPECTED" ]; then
 fi
 
 INCOHERENT=0
-for PAIR in "src/consent.js line 1:$HEADER_JS" \
-            "src/consent.css line 1:$HEADER_CSS" \
+for PAIR in "src/consent.js header:$HEADER_JS" \
+            "src/consent.css header:$HEADER_CSS" \
             "KIT_VERSION:$CONSTANT" \
             "CHANGELOG.md first entry:$FROM_CHANGELOG"; do
   WHERE="${PAIR%%:*}"
@@ -76,8 +79,8 @@ for PAIR in "src/consent.js line 1:$HEADER_JS" \
 done
 
 # texts/ is deliberately NOT checked. The templates carry the version they were last written for,
-# and that is correct: they do not change in every release, and a template still saying 2.0.0 when
-# the code is at 2.2.0 is information, not drift. Adding them here would create a fifth number to
+# and that is correct: they do not change in every release, and a template whose header is behind
+# the code is information, not drift. Adding them here would create a fifth number to
 # bump for no reason, which is how a gate teaches people to bump numbers without reading them.
 
 if [ "$INCOHERENT" -ne 0 ]; then
