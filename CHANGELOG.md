@@ -3,6 +3,84 @@
 Every site keeps a copy of `consent.js` with the version written on its first line. To find out
 whether a site is behind, open that file and compare it with this list.
 
+## 2.2.0 — 1 September 2026
+
+**First public release, and the project is now called `nothing-before-consent`.** It was
+`consent-kit`, in a private repository. The name is the claim the kit makes, and a claim you can
+falsify in a browser's Network tab in under a minute is worth more on the front of a repository than
+a description of a category.
+
+**The announcing mechanism is gone**: `consumers.csv`, `tools/announce.sh` and `announce.yml`, along
+with the design essay that argued for them. A registered site used to receive a pull request when a
+release was tagged. **Nothing arrives now, and nothing will say so** — which is exactly the shape of
+failure this project keeps writing about, so it is written here in full rather than left to be
+discovered. Any site holding a copy has to check for itself from now on, and the README has a section
+that says what to check and what the answers mean.
+
+The essay listed "making the repository public" among the alternatives it rejected, on the grounds
+that it bought nothing. That was true while the token could reach three known repositories and the
+kit could keep the pen. It stops being true the moment the reader might be anybody: a public tree can
+be read without a credential, so the version check and the byte-for-byte hand-edit check that used to
+need a token now need nothing at all, and they work for a stranger exactly as well as for the author.
+The essay stays where it was, at `v2.1.0`, correct about the world it was written in.
+
+**The version check now runs.** It used to live inside the announcing workflow, behind a condition
+that required a credential — so in six releases it never once executed, and the coherence of those
+six tags was maintained by hand without anybody knowing that was what was happening. It is now
+`tools/check-version.sh`, on every push and every pull request. A wrong number used to mean a false
+announcement to three known sites; it would now mean a wrong answer to everyone who ever asks.
+
+Fixed, and each of these was in the code while the documentation said otherwise:
+
+- **the focus trap in the `modal` variant never fired.** It collected the panel's controls without
+  filtering them, so the first was the `necessary` checkbox — disabled and hidden — and the last was
+  the save button, hidden until the detail is unfolded. Neither can hold the focus, so neither branch
+  ever ran and Tab left the panel freely, which is what the README said it did not do. With
+  `policyUrl` set it was worse than absent: Shift+Tab from the link suppressed the browser's own
+  behaviour and then focused something hidden, dropping the visitor on `<body>`.
+- **the `necessary` category barely worked at all.** Resources are activated by looking their
+  category up by name in the choice object, and `necessary` was absent from every one of those
+  objects except the single in-memory one built at the instant a button is clicked. So a script
+  marked `data-consent="necessary"` ran on the visit where the visitor answered and **never again**;
+  it did not run before the answer either, nor for a visitor in a country where a notice is shown
+  instead of a request. A missing field reads as a refusal, and this is a category that cannot be
+  refused — which is the whole of what the word means.
+
+  It is now present on all four paths, and two consequences are worth stating rather than leaving to
+  be noticed. A choice stored by an earlier version is completed on the next page load, so nobody is
+  asked again. And **a `necessary` resource now runs before the banner is answered**, which is a
+  change in behaviour and the correct one: the category holds things the visitor asked for by using
+  the site, the README's own example is a form's anti-spam, and withholding that until a dialog is
+  read leaves the form unprotected for exactly as long as somebody takes to read it. Nothing in the
+  other two categories moved: they still wait, and the demo has a `necessary` resource on it now so
+  that this is visible rather than asserted.
+- **two contrasts under the threshold this project invokes for others.** The policy link was 3.43:1
+  against the dark surface, where text owes 4.5:1, and the outline of the tertiary buttons was 1.24:1
+  in light and 1.72:1 in dark, against the 3:1 WCAG 1.4.11 asks of a user interface component — the
+  same criterion cited in 2.1.0 for the panel's own outline, applied to the panel and not to the
+  things inside it.
+- **a comment described an Escape key that no code handled.** Removed. Escape still does nothing, on
+  purpose: dismissing the panel with a key would be a choice nobody made.
+
+**Two new variables, so a site with a palette should read this.** `--ck-link` paints the policy link
+and starts as `--ck-primary`; `--ck-control-border` outlines a control inside the panel. They are
+separate from `--ck-primary` and `--ck-border` because they are measured differently: a button colour
+carries its own text and is legible whatever it is, while a link is text on the surface and owes
+4.5:1 against it — lightening `--ck-primary` enough to fix the link would have taken the buttons' own
+white text to 2.5:1. A site that does not map them gets the defaults, which hold in both themes. In
+dark mode `--ck-link` is the one variable the kit overrules on a site's behalf.
+
+**`--ck-` and `.ck-` stay as they are**, and no longer abbreviate the name. Renaming them is the only
+part of a rename that would break anything, because those variables are the ones a site sets in its
+*own* stylesheet — an abbreviation that has come loose from its word is a much smaller price than a
+compatibility layer, which 2.0.0 refused on principle and which would be harder to refuse now that
+the sites are not all in the same hands.
+
+**The `localStorage` key follows the name, and nobody loses a choice.** It is now
+`nothing-before-consent`; the old key is read once, carried over and removed. No banner comes back in
+front of somebody who had already answered — including somebody who had said no, which is the case
+that matters. `policyVersion` is untouched. The migration goes away in the next major.
+
 ## 2.1.0 — 1 August 2026
 
 - **the panel has an outline.** Until now it was the same colour as the page it sat on — 1.00:1
@@ -67,9 +145,10 @@ code that nobody would have remembered to remove.
 Also here:
 
 - **the announcing mechanism**: `consumers.csv`, version tags, `tools/announce.sh` and
-  `announce.yml`. Publishing a tag opens a PR on every registered site, carrying the entries that
-  separate it from the new release, and saying out loud if that copy had been edited by hand.
-  Design and reasoning in `docs/announcing-releases.md`.
+  `announce.yml`. Publishing a tag opened a PR on every registered site, carrying the entries that
+  separated it from the new release, and saying out loud if that copy had been edited by hand.
+  Removed in 2.2.0; the design and reasoning are still readable where they were true, at
+  [`docs/announcing-releases.md` as of `v2.1.0`](https://github.com/marco-fabbri/nothing-before-consent/blob/v2.1.0/docs/announcing-releases.md).
 - the language fallback moves from Italian to English, to match the language the kit is documented
   in. A page with no `lang` is a defect of that page — screen readers need it too — so this default
   should stay unreached.
@@ -84,8 +163,8 @@ Also here:
   content, it is an interface resting on top of it.
 
   **For sites already updated nothing changes**: where the root is the canonical 16px, the values in
-  px are exactly the ones the browser was computing before. Whoever adopted the kit on
-  andreamuccioli and staybycity can copy the two files expecting no visual difference.
+  px are exactly the ones the browser was computing before. On such a site the two files can be
+  copied over expecting no visual difference at all.
 
   The media queries stay in `em` on purpose: there the unit is measured against the browser's
   default font and not the site's root, so they were already immune, and in addition they follow
