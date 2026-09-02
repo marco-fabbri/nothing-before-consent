@@ -439,6 +439,52 @@ log makes sense because it adds no data you did not have. If a site of this kind
 newsletter, the subscription consent is a different thing from this banner and belongs where the
 subscribers live.
 
+## What the kit does not do, and who does it
+
+The banner and the two pages are the cookie half of a site's GDPR obligations. The other half is
+neither code nor text a repository can ship: it is a set of documents and habits that belong to the
+controller, and no subscription does them for you either, it only reminds you. They are listed
+here so that they are not left implied.
+
+- **Agreements with whoever processes data on your behalf.** The host, the mail provider that
+  receives what the contact form sends, the booking or review widget. Each is a processor under
+  Art. 28, and each needs a data processing agreement: it is usually inside their terms, and the
+  work is to find it, check it and keep a copy. If one of them is outside the EU, check what the
+  transfer rests on.
+- **A record of processing activities.** Art. 30 exempts organisations under 250 people whose
+  processing is occasional, but a site with a form and bookings processes on every visit, and the
+  Italian Garante recommends keeping one anyway. It is a page, not a system.
+- **Someone behind the address in the privacy notice.** The notice promises an answer to a visitor
+  who asks what you hold about them, within a month. If nobody reads that mailbox, the notice
+  states something false.
+- **What to do on a breach.** Who tells whom, within 72 hours. Also a page, written before it is
+  needed.
+- **Consent for a newsletter, an account, marketing to a named person.** That is where a log of the
+  consent is due, as the previous section says, and it lives with the subscribers, not in this
+  banner.
+- **A yearly reread of the two pages.** The texts age and nothing here updates them. Reading them
+  once a year against what the site actually loads is what replaces the regulatory updates you
+  would otherwise pay for.
+
+All of this scales with what the site holds. The day a site adds accounts, the record of
+processing stops being a recommendation and becomes a duty, the privacy notice gains a section on
+what an account stores and for how long, and the optional consents a registered person gives get
+logged in that site's own database, which is the one place a consent database earns its name.
+
+Two things on the technical side sit outside the kit as well, and are worth knowing rather than
+discovering:
+
+- **What arrives through a `<link>`, the kit does not block.** Fonts and stylesheets served by a
+  third party leave the browser before any script can intervene, and a font served from Google's
+  servers has already been fined in Germany as a transfer without consent. Point 1 of the check
+  below catches it; the remedy is to host the file on the site.
+- **Analytics is a choice, not a given.** GA4 is the one service in the `analytics` category, and it
+  brings with it the consent, the Consent Mode wiring and a transfer to the United States. A
+  measurement tool that keeps no identifier and sets no cookie, hosted where the site is, is
+  treated as a technical processing by the Garante's guidelines and asks for no consent at all: the
+  category empties, the wiring goes, and the numbers stay on your own server. Not required, but it
+  is the change that removes the most exposure for the least work.
+
 ## Verify, before saying it works
 
 The test is not "the banner appears", it is **"nothing runs before consent"**:
